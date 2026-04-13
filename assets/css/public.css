@@ -1,0 +1,145 @@
+.tmc-widget {
+    max-width: 760px;
+    margin: 2em auto;
+    padding: 1.5em;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    background: #fafafa;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.tmc-title {
+    margin: 0 0 0.5em;
+    font-size: 1.25em;
+    color: #222;
+}
+
+.tmc-intro {
+    margin: 0 0 1.25em;
+    color: #555;
+    font-size: 0.95em;
+    line-height: 1.5;
+}
+
+.tmc-field {
+    margin-bottom: 1em;
+    padding: 0.75em;
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 6px;
+}
+
+.tmc-field-head {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2em;
+    margin-bottom: 0.5em;
+}
+
+.tmc-field-label {
+    font-size: 0.95em;
+    color: #222;
+}
+
+.tmc-field-current {
+    font-size: 0.85em;
+    color: #666;
+}
+
+.tmc-field-current em {
+    color: #333;
+    font-style: normal;
+    font-weight: 500;
+}
+
+.tmc-field-input,
+.tmc-input {
+    width: 100%;
+    padding: 0.5em;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.95em;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.tmc-field-input:focus,
+.tmc-input:focus {
+    outline: none;
+    border-color: #2271b1;
+    box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.2);
+}
+
+.tmc-meta {
+    margin: 1.5em 0;
+    padding-top: 1em;
+    border-top: 1px dashed #ddd;
+}
+
+.tmc-meta label {
+    display: block;
+    margin-bottom: 0.75em;
+}
+
+.tmc-meta label > span {
+    display: block;
+    margin-bottom: 0.25em;
+    font-size: 0.9em;
+    color: #555;
+}
+
+.h-captcha {
+    margin: 1em 0;
+}
+
+.tmc-actions {
+    display: flex;
+    align-items: center;
+    gap: 1em;
+    flex-wrap: wrap;
+}
+
+.tmc-submit {
+    padding: 0.6em 1.5em;
+    background: #2271b1;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.tmc-submit:hover:not(:disabled) {
+    background: #135e96;
+}
+
+.tmc-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.tmc-feedback {
+    font-size: 0.95em;
+    flex: 1;
+    min-width: 200px;
+}
+
+.tmc-feedback-success { color: #1a8c3c; }
+.tmc-feedback-error   { color: #c92a2a; }
+.tmc-feedback-info    { color: #555; }
+
+.tmc-disabled,
+.tmc-error,
+.tmc-empty {
+    padding: 1em;
+    background: #fff8e1;
+    border-left: 4px solid #f0b429;
+    color: #555;
+    border-radius: 4px;
+}
+
+.tmc-error {
+    background: #fdecea;
+    border-left-color: #c92a2a;
+}

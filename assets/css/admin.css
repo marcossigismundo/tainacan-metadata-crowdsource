@@ -1,0 +1,59 @@
+.tmc-wrap .tmc-badge {
+    display: inline-block;
+    min-width: 18px;
+    padding: 0 6px;
+    margin-left: 6px;
+    border-radius: 10px;
+    background: #d63638;
+    color: #fff;
+    font-size: 0.75em;
+    font-weight: 600;
+    line-height: 18px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.tmc-wrap .subsubsub { margin: 1em 0; }
+
+.tmc-val {
+    max-width: 260px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 0.9em;
+}
+
+.tmc-val-old { color: #666; }
+.tmc-val-new {
+    background: #fffae6;
+    padding: 4px 8px;
+    border-radius: 3px;
+    color: #333;
+}
+
+.tmc-status {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.8em;
+    font-weight: 600;
+}
+
+.tmc-status-pending  { background: #fff4c4; color: #8a6d00; }
+.tmc-status-stale    { background: #fde1e1; color: #a12222; }
+.tmc-status-approved { background: #ddf5e0; color: #1a6b2f; }
+.tmc-status-rejected { background: #eee;    color: #666; }
+
+.tmc-row-stale {
+    background: #fff8f8 !important;
+}
+
+.tmc-actions button {
+    margin-right: 4px;
+}
+
+.tmc-empty {
+    padding: 1em;
+    background: #f6f7f7;
+    border-left: 4px solid #c3c4c7;
+    color: #555;
+}
