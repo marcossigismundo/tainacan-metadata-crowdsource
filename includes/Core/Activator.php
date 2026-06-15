@@ -1,17 +1,34 @@
 <?php
+/**
+ * Rotina de ativação do plugin.
+ *
+ * @package TMC
+ */
+
 namespace TMC\Core;
 
 use TMC\Database\Tables;
 
-class Activator {
-    public static function activate() {
-        Tables::create();
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
-        // Defaults sensatos para as opções do plugin.
-        add_option('tmc_enabled', 1);
-        add_option('tmc_notify_email', 1);
-        add_option('tmc_notify_to', get_option('admin_email'));
-        add_option('tmc_hcaptcha_site_key', '');
-        add_option('tmc_hcaptcha_secret', '');
-    }
+/**
+ * Executada ao ativar o plugin: cria a tabela e define options padrão.
+ */
+class Activator {
+
+	/**
+	 * Cria o schema e registra as opções padrão.
+	 *
+	 * @return void
+	 */
+	public static function activate() {
+		Tables::create();
+
+		// Defaults sensatos para as opções do plugin.
+		add_option( 'tmc_enabled', 1 );
+		add_option( 'tmc_notify_email', 1 );
+		add_option( 'tmc_notify_to', get_option( 'admin_email' ) );
+	}
 }

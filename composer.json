@@ -1,0 +1,25 @@
+{
+	"name": "marcossigismundo/tainacan-metadata-crowdsource",
+	"description": "Permite que visitantes sugiram correções nos metadados dos itens Tainacan, com moderação pela equipe.",
+	"type": "wordpress-plugin",
+	"license": "GPL-3.0-or-later",
+	"require": {
+		"php": ">=8.0"
+	},
+	"require-dev": {
+		"wp-coding-standards/wpcs": "^3.0",
+		"phpcompatibility/phpcompatibility-wp": "^2.1",
+		"automattic/vipwpcs": "^3.0",
+		"phpcsstandards/phpcsextra": "^1.2",
+		"phpcsstandards/phpcsutils": "^1.0"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	},
+	"scripts": {
+		"lint": "phpcs --standard=phpcs.xml.dist",
+		"lint:fix": "phpcbf --standard=phpcs.xml.dist"
+	}
+}

@@ -1,0 +1,118 @@
+# Copyright (C) 2026 Tainacan Team
+# This file is distributed under the GPL-3.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Tainacan Metadata Crowdsource 1.0.0\n"
+"Report-Msgid-Bugs-To: https://github.com/marcossigismundo/tainacan-metadata-crowdsource/issues\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-06-15T00:00:00+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Domain: tainacan-metadata-crowdsource\n"
+
+#. Plugin Name of the plugin
+msgid "Tainacan Metadata Crowdsource"
+msgstr ""
+
+#: includes/Frontend/Shortcode.php
+msgid "Sugerir correção nos metadados"
+msgstr ""
+
+#: includes/Frontend/Shortcode.php
+msgid "As sugestões estão desabilitadas no momento."
+msgstr ""
+
+#: includes/Frontend/Shortcode.php
+msgid "Item inválido."
+msgstr ""
+
+#: includes/Frontend/Shortcode.php
+msgid "Este item não possui metadados disponíveis para sugestão no momento."
+msgstr ""
+
+#: includes/Frontend/Shortcode.php
+msgid "Valor atual:"
+msgstr ""
+
+#: includes/Frontend/Shortcode.php includes/Admin/AdminPage.php
+msgid "(vazio)"
+msgstr ""
+
+#: includes/Frontend/Shortcode.php
+msgid "Sugerir novo valor…"
+msgstr ""
+
+#: includes/Frontend/Shortcode.php
+msgid "Seu nome (opcional)"
+msgstr ""
+
+#: includes/Frontend/Shortcode.php
+msgid "Seu e-mail (opcional)"
+msgstr ""
+
+#: includes/Frontend/Shortcode.php
+msgid "Motivo da correção (opcional)"
+msgstr ""
+
+#. translators: %s: expressão aritmética (ex.: "3 + 5") injetada pelo JS.
+#: includes/Frontend/Shortcode.php
+msgid "Verificação anti-spam: quanto é %s?"
+msgstr ""
+
+#: includes/Frontend/Shortcode.php
+msgid "Enviar sugestões"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Crowdsource"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Sugestões"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Configurações"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Aprovar"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Rejeitar"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Pendente"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Aprovada"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Rejeitada"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Desatualizada"
+msgstr ""
+
+#: includes/SuggestionsManager.php
+msgid "O novo valor não pode ser vazio."
+msgstr ""
+
+#: includes/SuggestionsManager.php
+msgid "Item não encontrado."
+msgstr ""
+
+#: includes/REST/API.php
+msgid "Falha na verificação anti-spam. Recarregue a página e tente novamente."
+msgstr ""
+
+#: includes/REST/API.php
+msgid "Sugestão(ões) recebida(s)! Serão revisadas pela equipe antes de aplicadas."
+msgstr ""

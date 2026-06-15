@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<ruleset name="Tainacan Metadata Crowdsource">
+	<description>Coding standards for the Tainacan Metadata Crowdsource plugin.</description>
+
+	<rule ref="WordPress-Core"/>
+	<rule ref="WordPress-Docs"/>
+	<rule ref="WordPress-Extra"/>
+	<rule ref="WordPress.Security"/>
+	<rule ref="PluginCheck"/>
+
+	<config name="testVersion" value="8.0-"/>
+	<rule ref="PHPCompatibilityWP"/>
+
+	<config name="minimum_wp_version" value="6.0"/>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="tainacan-metadata-crowdsource"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!--
+		O plugin usa autoloader PSR-4 (TMC\Foo\Bar => includes/Foo/Bar.php) com
+		nomes StudlyCase, em vez da convenção class-*.php do core. A convenção de
+		arquivo do WPCS não se aplica aqui e o Plugin Check do WordPress.org não a
+		exige. Mantemos o restante do WordPress-Extra/Docs/Security intacto.
+	-->
+	<rule ref="WordPress.Files.FileName">
+		<exclude-pattern>includes/*</exclude-pattern>
+	</rule>
+
+	<arg name="extensions" value="php"/>
+	<arg value="ps"/>
+	<arg name="colors"/>
+	<file>.</file>
+
+	<exclude-pattern>*/node_modules/*</exclude-pattern>
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+	<exclude-pattern>*/assets/vendor/*</exclude-pattern>
+	<exclude-pattern>*/languages/*</exclude-pattern>
+</ruleset>

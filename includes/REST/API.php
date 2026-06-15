@@ -1,170 +1,346 @@
 <?php
-namespace TMC\REST;
-
-use TMC\SuggestionsManager;
-
 /**
  * Endpoints REST do plugin.
  *
+ * @package TMC
+ */
+
+namespace TMC\REST;
+
+use TMC\SuggestionsManager;
+use TMC\Security\Captcha;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Registra e atende os endpoints REST.
+ *
  * Público:
- *   POST /wp-json/tmc/v1/suggestions           (submit, com hCaptcha)
+ *   GET  /wp-json/tmc/v1/captcha      (gera desafio anti-spam local)
+ *   POST /wp-json/tmc/v1/suggestions  (submete sugestões em lote)
  *
  * Admin (manage_options):
- *   GET  /wp-json/tmc/v1/suggestions           (listar)
+ *   GET  /wp-json/tmc/v1/suggestions
  *   POST /wp-json/tmc/v1/suggestions/{id}/approve
  *   POST /wp-json/tmc/v1/suggestions/{id}/reject
  */
 class API {
-    private $manager;
 
-    public function __construct() {
-        $this->manager = new SuggestionsManager();
-    }
+	/**
+	 * Gerenciador de sugestões.
+	 *
+	 * @var SuggestionsManager
+	 */
+	private $manager;
 
-    public function register_routes() {
-        register_rest_route('tmc/v1', '/suggestions', [
-            [
-                'methods'             => 'POST',
-                'callback'            => [$this, 'submit'],
-                'permission_callback' => '__return_true',
-                'args' => [
-                    'item_id'      => ['required' => true, 'type' => 'integer'],
-                    'metadatum_id' => ['required' => true, 'type' => 'integer'],
-                    'new_value'    => ['required' => true, 'type' => 'string'],
-                ],
-            ],
-            [
-                'methods'             => 'GET',
-                'callback'            => [$this, 'list_for_admin'],
-                'permission_callback' => [$this, 'admin_permission'],
-            ],
-        ]);
+	/**
+	 * Construtor.
+	 */
+	public function __construct() {
+		$this->manager = new SuggestionsManager();
+	}
 
-        register_rest_route('tmc/v1', '/suggestions/(?P<id>\d+)/approve', [
-            'methods'             => 'POST',
-            'callback'            => [$this, 'approve'],
-            'permission_callback' => [$this, 'admin_permission'],
-        ]);
+	/**
+	 * Registra todas as rotas REST.
+	 *
+	 * @return void
+	 */
+	public function register_routes() {
+		register_rest_route(
+			'tmc/v1',
+			'/captcha',
+			array(
+				'methods'             => \WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_captcha' ),
+				'permission_callback' => array( $this, 'public_endpoint_permission' ),
+			)
+		);
 
-        register_rest_route('tmc/v1', '/suggestions/(?P<id>\d+)/reject', [
-            'methods'             => 'POST',
-            'callback'            => [$this, 'reject'],
-            'permission_callback' => [$this, 'admin_permission'],
-        ]);
-    }
+		register_rest_route(
+			'tmc/v1',
+			'/suggestions',
+			array(
+				array(
+					'methods'             => \WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'submit' ),
+					'permission_callback' => array( $this, 'public_endpoint_permission' ),
+					'args'                => array(
+						'item_id'         => array(
+							'required'          => true,
+							'type'              => 'integer',
+							'sanitize_callback' => 'absint',
+							'validate_callback' => array( $this, 'validate_positive_int' ),
+						),
+						'suggestions'     => array(
+							'required' => true,
+							'type'     => 'array',
+						),
+						'captcha_token'   => array( 'type' => 'string' ),
+						'captcha_answer'  => array( 'type' => 'string' ),
+						'submitter_name'  => array( 'type' => 'string' ),
+						'submitter_email' => array( 'type' => 'string' ),
+						'reason'          => array( 'type' => 'string' ),
+						'hp'              => array( 'type' => 'string' ),
+					),
+				),
+				array(
+					'methods'             => \WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'list_for_admin' ),
+					'permission_callback' => array( $this, 'admin_permission' ),
+				),
+			)
+		);
 
-    public function admin_permission() {
-        return current_user_can('manage_options');
-    }
+		register_rest_route(
+			'tmc/v1',
+			'/suggestions/(?P<id>\d+)/approve',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'approve' ),
+				'permission_callback' => array( $this, 'admin_permission' ),
+				'args'                => array(
+					'id' => array(
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+						'validate_callback' => array( $this, 'validate_positive_int' ),
+					),
+				),
+			)
+		);
 
-    public function submit(\WP_REST_Request $request) {
-        if (!(int) get_option('tmc_enabled', 1)) {
-            return new \WP_REST_Response(['error' => 'Sugestões desabilitadas.'], 403);
-        }
+		register_rest_route(
+			'tmc/v1',
+			'/suggestions/(?P<id>\d+)/reject',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'reject' ),
+				'permission_callback' => array( $this, 'admin_permission' ),
+				'args'                => array(
+					'id' => array(
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+						'validate_callback' => array( $this, 'validate_positive_int' ),
+					),
+				),
+			)
+		);
+	}
 
-        $ip = $this->get_client_ip();
+	/**
+	 * Valida que o parâmetro é um inteiro positivo.
+	 *
+	 * @param mixed $value Valor recebido.
+	 * @return bool
+	 */
+	public function validate_positive_int( $value ) {
+		return is_numeric( $value ) && (int) $value > 0;
+	}
 
-        // Rate limit simples: 1 submissão a cada 15s por IP
-        $rate_key = 'tmc_rate_' . md5($ip);
-        if (get_transient($rate_key)) {
-            return new \WP_REST_Response(['error' => 'Aguarde alguns segundos antes de enviar outra sugestão.'], 429);
-        }
+	/**
+	 * Permissão dos endpoints administrativos.
+	 *
+	 * @return bool
+	 */
+	public function admin_permission() {
+		return current_user_can( 'manage_options' );
+	}
 
-        $captcha_token = (string) $request->get_param('hcaptcha_token');
-        if (!$this->verify_hcaptcha($captcha_token, $ip)) {
-            return new \WP_REST_Response(['error' => 'Falha na verificação de CAPTCHA.'], 400);
-        }
+	/**
+	 * Permissão dos endpoints públicos (captcha + submissão).
+	 *
+	 * Não há capability aplicável a visitante anônimo; a proteção real é CAPTCHA
+	 * local de uso único + honeypot + time-trap + rate-limit por IP, verificados
+	 * no callback de submissão. Liberado apenas enquanto o recurso está habilitado.
+	 *
+	 * @return bool
+	 */
+	public function public_endpoint_permission() {
+		return 1 === (int) get_option( 'tmc_enabled', 1 );
+	}
 
-        $context = [
-            'name'       => sanitize_text_field((string) $request->get_param('submitter_name')),
-            'email'      => sanitize_email((string) $request->get_param('submitter_email')),
-            'reason'     => sanitize_textarea_field((string) $request->get_param('reason')),
-            'ip'         => $ip,
-            'user_agent' => isset($_SERVER['HTTP_USER_AGENT']) ? substr((string) $_SERVER['HTTP_USER_AGENT'], 0, 500) : '',
-        ];
+	/**
+	 * Gera um desafio anti-spam.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	public function get_captcha() {
+		return new \WP_REST_Response( Captcha::generate(), 200 );
+	}
 
-        $result = $this->manager->submit(
-            (int) $request->get_param('item_id'),
-            (int) $request->get_param('metadatum_id'),
-            wp_kses_post((string) $request->get_param('new_value')),
-            $context
-        );
+	/**
+	 * Recebe e registra sugestões em lote.
+	 *
+	 * @param \WP_REST_Request $request Requisição.
+	 * @return \WP_REST_Response
+	 */
+	public function submit( \WP_REST_Request $request ) {
+		$ip = $this->get_client_ip();
 
-        if (is_wp_error($result)) {
-            return new \WP_REST_Response(['error' => $result->get_error_message()], 400);
-        }
+		// Rate limit simples: 1 submissão a cada 15s por IP.
+		$rate_key = 'tmc_rate_' . md5( $ip );
+		if ( get_transient( $rate_key ) ) {
+			return new \WP_REST_Response(
+				array( 'error' => __( 'Aguarde alguns segundos antes de enviar outra sugestão.', 'tainacan-metadata-crowdsource' ) ),
+				429
+			);
+		}
 
-        set_transient($rate_key, 1, 15);
+		if ( ! Captcha::verify(
+			(string) $request->get_param( 'captcha_token' ),
+			$request->get_param( 'captcha_answer' ),
+			(string) $request->get_param( 'hp' )
+		) ) {
+			return new \WP_REST_Response(
+				array( 'error' => __( 'Falha na verificação anti-spam. Recarregue a página e tente novamente.', 'tainacan-metadata-crowdsource' ) ),
+				400
+			);
+		}
 
-        return new \WP_REST_Response([
-            'success'       => true,
-            'suggestion_id' => $result,
-            'message'       => 'Sugestão recebida! Ela será revisada pela equipe.',
-        ], 201);
-    }
+		$item_id     = (int) $request->get_param( 'item_id' );
+		$suggestions = $request->get_param( 'suggestions' );
+		if ( ! is_array( $suggestions ) || empty( $suggestions ) ) {
+			return new \WP_REST_Response(
+				array( 'error' => __( 'Nenhuma sugestão foi enviada.', 'tainacan-metadata-crowdsource' ) ),
+				400
+			);
+		}
 
-    public function list_for_admin(\WP_REST_Request $request) {
-        $status = $request->get_param('status');
-        $items = $this->manager->list([
-            'status' => $status,
-            'limit'  => (int) ($request->get_param('limit') ?: 50),
-            'offset' => (int) ($request->get_param('offset') ?: 0),
-        ]);
-        return new \WP_REST_Response([
-            'items'  => $items,
-            'counts' => $this->manager->count_by_status(),
-        ], 200);
-    }
+		$context = array(
+			'name'       => sanitize_text_field( (string) $request->get_param( 'submitter_name' ) ),
+			'email'      => sanitize_email( (string) $request->get_param( 'submitter_email' ) ),
+			'reason'     => sanitize_textarea_field( (string) $request->get_param( 'reason' ) ),
+			'ip'         => $ip,
+			'user_agent' => $this->get_user_agent(),
+		);
 
-    public function approve(\WP_REST_Request $request) {
-        $id = (int) $request->get_param('id');
-        $notes = sanitize_textarea_field((string) $request->get_param('notes'));
-        $result = $this->manager->approve($id, get_current_user_id(), $notes);
-        if (is_wp_error($result)) {
-            return new \WP_REST_Response(['error' => $result->get_error_message()], 400);
-        }
-        return new \WP_REST_Response(['success' => true], 200);
-    }
+		$created = 0;
+		$errors  = array();
+		foreach ( $suggestions as $s ) {
+			if ( ! is_array( $s ) || ! isset( $s['metadatum_id'], $s['new_value'] ) ) {
+				continue;
+			}
+			$result = $this->manager->submit(
+				$item_id,
+				(int) $s['metadatum_id'],
+				wp_kses_post( (string) $s['new_value'] ),
+				$context
+			);
+			if ( is_wp_error( $result ) ) {
+				$errors[] = $result->get_error_message();
+			} else {
+				++$created;
+			}
+		}
 
-    public function reject(\WP_REST_Request $request) {
-        $id = (int) $request->get_param('id');
-        $notes = sanitize_textarea_field((string) $request->get_param('notes'));
-        $result = $this->manager->reject($id, get_current_user_id(), $notes);
-        if (is_wp_error($result)) {
-            return new \WP_REST_Response(['error' => $result->get_error_message()], 400);
-        }
-        return new \WP_REST_Response(['success' => true], 200);
-    }
+		if ( 0 === $created ) {
+			$error_message = empty( $errors )
+				? __( 'Não foi possível registrar as sugestões.', 'tainacan-metadata-crowdsource' )
+				: implode( ' ', array_unique( $errors ) );
+			return new \WP_REST_Response( array( 'error' => $error_message ), 400 );
+		}
 
-    private function verify_hcaptcha($token, $ip) {
-        if (empty($token)) return false;
+		set_transient( $rate_key, 1, 15 );
 
-        $secret = trim((string) get_option('tmc_hcaptcha_secret', ''));
-        if (empty($secret)) return false;
+		return new \WP_REST_Response(
+			array(
+				'success' => true,
+				'created' => $created,
+				'message' => __( 'Sugestão(ões) recebida(s)! Serão revisadas pela equipe antes de aplicadas.', 'tainacan-metadata-crowdsource' ),
+			),
+			201
+		);
+	}
 
-        $response = wp_remote_post('https://api.hcaptcha.com/siteverify', [
-            'timeout' => 10,
-            'body' => [
-                'secret'   => $secret,
-                'response' => $token,
-                'remoteip' => $ip,
-            ],
-        ]);
+	/**
+	 * Lista sugestões para o admin.
+	 *
+	 * @param \WP_REST_Request $request Requisição.
+	 * @return \WP_REST_Response
+	 */
+	public function list_for_admin( \WP_REST_Request $request ) {
+		$status = $request->get_param( 'status' );
+		$limit  = (int) $request->get_param( 'limit' );
+		$offset = (int) $request->get_param( 'offset' );
 
-        if (is_wp_error($response)) return false;
+		$items = $this->manager->list(
+			array(
+				'status' => $status ? sanitize_key( (string) $status ) : null,
+				'limit'  => $limit > 0 ? $limit : 50,
+				'offset' => max( 0, $offset ),
+			)
+		);
+		return new \WP_REST_Response(
+			array(
+				'items'  => $items,
+				'counts' => $this->manager->count_by_status(),
+			),
+			200
+		);
+	}
 
-        $body = json_decode(wp_remote_retrieve_body($response), true);
-        return is_array($body) && !empty($body['success']);
-    }
+	/**
+	 * Aprova uma sugestão.
+	 *
+	 * @param \WP_REST_Request $request Requisição.
+	 * @return \WP_REST_Response
+	 */
+	public function approve( \WP_REST_Request $request ) {
+		$id     = (int) $request->get_param( 'id' );
+		$notes  = sanitize_textarea_field( (string) $request->get_param( 'notes' ) );
+		$result = $this->manager->approve( $id, get_current_user_id(), $notes );
+		if ( is_wp_error( $result ) ) {
+			return new \WP_REST_Response( array( 'error' => $result->get_error_message() ), 400 );
+		}
+		return new \WP_REST_Response( array( 'success' => true ), 200 );
+	}
 
-    private function get_client_ip() {
-        $candidates = ['HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR'];
-        foreach ($candidates as $key) {
-            if (!empty($_SERVER[$key])) {
-                $ip = trim(explode(',', $_SERVER[$key])[0]);
-                if (filter_var($ip, FILTER_VALIDATE_IP)) return $ip;
-            }
-        }
-        return '0.0.0.0';
-    }
+	/**
+	 * Rejeita uma sugestão.
+	 *
+	 * @param \WP_REST_Request $request Requisição.
+	 * @return \WP_REST_Response
+	 */
+	public function reject( \WP_REST_Request $request ) {
+		$id     = (int) $request->get_param( 'id' );
+		$notes  = sanitize_textarea_field( (string) $request->get_param( 'notes' ) );
+		$result = $this->manager->reject( $id, get_current_user_id(), $notes );
+		if ( is_wp_error( $result ) ) {
+			return new \WP_REST_Response( array( 'error' => $result->get_error_message() ), 400 );
+		}
+		return new \WP_REST_Response( array( 'success' => true ), 200 );
+	}
+
+	/**
+	 * Retorna o user agent saneado.
+	 *
+	 * @return string
+	 */
+	private function get_user_agent() {
+		if ( empty( $_SERVER['HTTP_USER_AGENT'] ) ) {
+			return '';
+		}
+		return substr( sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ), 0, 500 );
+	}
+
+	/**
+	 * Retorna o IP do cliente (considerando proxies conhecidos).
+	 *
+	 * @return string
+	 */
+	private function get_client_ip() {
+		$candidates = array( 'HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR' );
+		foreach ( $candidates as $key ) {
+			if ( empty( $_SERVER[ $key ] ) ) {
+				continue;
+			}
+			$raw = sanitize_text_field( wp_unslash( $_SERVER[ $key ] ) );
+			$ip  = trim( explode( ',', $raw )[0] );
+			if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
+				return $ip;
+			}
+		}
+		return '0.0.0.0';
+	}
 }

@@ -1,3 +1,58 @@
+/*
+ * Estilos da página de admin do plugin, ajustados para conviver com
+ * o container do Tainacan (.tainacan-page-container-content e
+ * .tainacan-fixed-subheader). Valores de cor/espacamento seguem a
+ * paleta nativa do Tainacan admin (cinza azulado claro, primário #298596).
+ */
+
+.tmc-wrap {
+    padding: 1.25rem 1.5rem 3rem;
+    background: transparent;
+}
+
+.tmc-wrap .tainacan-fixed-subheader {
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #e0e6e9;
+}
+
+.tmc-wrap .tainacan-page-title {
+    margin: 0 0 0.25rem;
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: #1d2327;
+}
+
+.tmc-wrap .tainacan-page-description {
+    margin: 0;
+    color: #5e6c70;
+    font-size: 0.95rem;
+}
+
+.tmc-wrap .nav-tab-wrapper {
+    margin-top: 0;
+    border-bottom: 1px solid #dcdcdc;
+}
+
+.tmc-wrap .nav-tab {
+    background: transparent;
+    border-color: transparent;
+    border-bottom: 2px solid transparent;
+    color: #5e6c70;
+    font-weight: 500;
+    margin-left: 0;
+    margin-right: 0.5rem;
+    padding: 0.5rem 1rem;
+}
+
+.tmc-wrap .nav-tab-active,
+.tmc-wrap .nav-tab-active:focus,
+.tmc-wrap .nav-tab-active:hover {
+    background: transparent;
+    color: #298596;
+    border-bottom-color: #298596;
+}
+
 .tmc-wrap .tmc-badge {
     display: inline-block;
     min-width: 18px;
@@ -13,7 +68,21 @@
     vertical-align: middle;
 }
 
-.tmc-wrap .subsubsub { margin: 1em 0; }
+.tmc-wrap .subsubsub {
+    margin: 1em 0;
+}
+
+.tmc-wrap .wp-list-table {
+    margin-top: 0.5em;
+    border: 1px solid #e0e6e9;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.tmc-wrap .wp-list-table thead th {
+    background: #f0f4f6;
+    color: #1d2327;
+    font-weight: 600;
+}
 
 .tmc-val {
     max-width: 260px;
@@ -22,9 +91,12 @@
     font-size: 0.9em;
 }
 
-.tmc-val-old { color: #666; }
+.tmc-val-old {
+    color: #5e6c70;
+}
+
 .tmc-val-new {
-    background: #fffae6;
+    background: #fff8e1;
     padding: 4px 8px;
     border-radius: 3px;
     color: #333;
@@ -56,4 +128,14 @@
     background: #f6f7f7;
     border-left: 4px solid #c3c4c7;
     color: #555;
+}
+
+.tmc-settings .form-table th {
+    width: 220px;
+}
+
+.tmc-settings .description {
+    margin-top: 0.5em;
+    color: #5e6c70;
+    font-style: italic;
 }

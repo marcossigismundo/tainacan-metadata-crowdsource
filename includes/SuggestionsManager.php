@@ -1,360 +1,528 @@
 <?php
+/**
+ * Lógica central de CRUD das sugestões de crowdsourcing.
+ *
+ * @package TMC
+ */
+
 namespace TMC;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 /**
  * Gerencia sugestões de crowdsourcing para metadados de itens Tainacan.
  *
  * Fluxo: visitante submete sugestão → fica pending → equipe aprova/rejeita.
- * Ao aprovar, o valor sugerido substitui o metadado no Tainacan.
- * Se o valor original mudar antes da revisão, a sugestão é marcada
- * como 'stale' para alertar o revisor.
+ * Ao aprovar, o valor sugerido substitui o metadado no Tainacan. Se o valor
+ * original mudar antes da revisão, a sugestão é marcada como 'stale'.
+ *
+ * Persistência: tabela própria do plugin (wp_tmc_suggestions). Não há entidade
+ * Tainacan equivalente (sugestões não são post-centric), então usamos $wpdb
+ * direto — todas as queries com prepare()/placeholders e phpcs:ignore Pattern A.
  */
 class SuggestionsManager {
-    private $wpdb;
-    private $table;
 
-    const STATUS_PENDING  = 'pending';
-    const STATUS_APPROVED = 'approved';
-    const STATUS_REJECTED = 'rejected';
-    const STATUS_STALE    = 'stale';
+	/**
+	 * Instância de $wpdb.
+	 *
+	 * @var \wpdb
+	 */
+	private $wpdb;
 
-    public function __construct() {
-        global $wpdb;
-        $this->wpdb  = $wpdb;
-        $this->table = $wpdb->prefix . 'tmc_suggestions';
-    }
+	/**
+	 * Nome completo da tabela de sugestões.
+	 *
+	 * @var string
+	 */
+	private $table;
 
-    /**
-     * Registra uma nova sugestão. Retorna o ID ou WP_Error.
-     */
-    public function submit($item_id, $metadatum_id, $new_value, $context = []) {
-        $item_id      = (int) $item_id;
-        $metadatum_id = (int) $metadatum_id;
-        $new_value    = is_array($new_value) ? implode('||', $new_value) : (string) $new_value;
+	const STATUS_PENDING  = 'pending';
+	const STATUS_APPROVED = 'approved';
+	const STATUS_REJECTED = 'rejected';
+	const STATUS_STALE    = 'stale';
 
-        if ($item_id <= 0 || $metadatum_id <= 0) {
-            return new \WP_Error('tmc_invalid_params', 'Item e metadado são obrigatórios.');
-        }
-        if (trim($new_value) === '') {
-            return new \WP_Error('tmc_empty_value', 'O novo valor não pode ser vazio.');
-        }
-        if (!get_post($item_id)) {
-            return new \WP_Error('tmc_item_not_found', 'Item não encontrado.');
-        }
+	/**
+	 * Construtor.
+	 */
+	public function __construct() {
+		global $wpdb;
+		$this->wpdb  = $wpdb;
+		$this->table = $wpdb->prefix . 'tmc_suggestions';
+	}
 
-        $current = $this->get_current_metadatum_value($item_id, $metadatum_id);
+	/**
+	 * Registra uma nova sugestão.
+	 *
+	 * @param int          $item_id      ID do item Tainacan.
+	 * @param int          $metadatum_id ID do metadado.
+	 * @param string|array $new_value    Valor sugerido.
+	 * @param array        $context      Contexto opcional (name, email, reason, ip, user_agent).
+	 * @return int|\WP_Error ID da sugestão criada ou erro.
+	 */
+	public function submit( $item_id, $metadatum_id, $new_value, $context = array() ) {
+		$item_id      = (int) $item_id;
+		$metadatum_id = (int) $metadatum_id;
+		$new_value    = is_array( $new_value ) ? implode( '||', $new_value ) : (string) $new_value;
 
-        $data = [
-            'item_id'              => $item_id,
-            'collection_id'        => $current['collection_id'] ?? null,
-            'metadatum_id'         => $metadatum_id,
-            'metadatum_slug'       => $current['slug'] ?? null,
-            'metadatum_label'      => $current['label'] ?? null,
-            'old_value'            => $current['value_text'] ?? '',
-            'old_value_hash'       => $this->hash_value($current['value_text'] ?? ''),
-            'new_value'            => $new_value,
-            'reason'               => isset($context['reason']) ? substr((string) $context['reason'], 0, 2000) : null,
-            'submitter_name'       => isset($context['name']) ? substr((string) $context['name'], 0, 255) : null,
-            'submitter_email'      => isset($context['email']) ? substr((string) $context['email'], 0, 255) : null,
-            'submitter_ip'         => isset($context['ip']) ? substr((string) $context['ip'], 0, 45) : null,
-            'submitter_user_agent' => isset($context['user_agent']) ? substr((string) $context['user_agent'], 0, 500) : null,
-            'status'               => self::STATUS_PENDING,
-        ];
+		if ( $item_id <= 0 || $metadatum_id <= 0 ) {
+			return new \WP_Error( 'tmc_invalid_params', __( 'Item e metadado são obrigatórios.', 'tainacan-metadata-crowdsource' ) );
+		}
+		if ( '' === trim( $new_value ) ) {
+			return new \WP_Error( 'tmc_empty_value', __( 'O novo valor não pode ser vazio.', 'tainacan-metadata-crowdsource' ) );
+		}
+		if ( ! get_post( $item_id ) ) {
+			return new \WP_Error( 'tmc_item_not_found', __( 'Item não encontrado.', 'tainacan-metadata-crowdsource' ) );
+		}
 
-        $inserted = $this->wpdb->insert($this->table, $data);
-        if ($inserted === false) {
-            return new \WP_Error('tmc_db_error', 'Erro ao registrar sugestão.');
-        }
+		$current = $this->get_current_metadatum_value( $item_id, $metadatum_id );
 
-        $suggestion_id = (int) $this->wpdb->insert_id;
+		$data = array(
+			'item_id'              => $item_id,
+			'collection_id'        => $current['collection_id'] ?? null,
+			'metadatum_id'         => $metadatum_id,
+			'metadatum_slug'       => $current['slug'] ?? null,
+			'metadatum_label'      => $current['label'] ?? null,
+			'old_value'            => $current['value_text'] ?? '',
+			'old_value_hash'       => $this->hash_value( $current['value_text'] ?? '' ),
+			'new_value'            => $new_value,
+			'reason'               => isset( $context['reason'] ) ? substr( (string) $context['reason'], 0, 2000 ) : null,
+			'submitter_name'       => isset( $context['name'] ) ? substr( (string) $context['name'], 0, 255 ) : null,
+			'submitter_email'      => isset( $context['email'] ) ? substr( (string) $context['email'], 0, 255 ) : null,
+			'submitter_ip'         => isset( $context['ip'] ) ? substr( (string) $context['ip'], 0, 45 ) : null,
+			'submitter_user_agent' => isset( $context['user_agent'] ) ? substr( (string) $context['user_agent'], 0, 500 ) : null,
+			'status'               => self::STATUS_PENDING,
+		);
 
-        do_action('tmc_suggestion_submitted', $suggestion_id, $data);
-        $this->notify_moderators($suggestion_id, $data);
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin's own table; write path, caching irrelevant; values sanitized above and inserted via $wpdb->insert (auto-prepared).
+		$inserted = $this->wpdb->insert( $this->table, $data );
+		if ( false === $inserted ) {
+			return new \WP_Error( 'tmc_db_error', __( 'Erro ao registrar sugestão.', 'tainacan-metadata-crowdsource' ) );
+		}
 
-        return $suggestion_id;
-    }
+		$suggestion_id = (int) $this->wpdb->insert_id;
 
-    public function get($suggestion_id) {
-        return $this->wpdb->get_row(
-            $this->wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", (int) $suggestion_id)
-        );
-    }
+		do_action( 'tmc_suggestion_submitted', $suggestion_id, $data );
+		$this->notify_moderators( $suggestion_id, $data );
 
-    public function list($args = []) {
-        $defaults = [
-            'status'  => null,
-            'item_id' => null,
-            'limit'   => 50,
-            'offset'  => 0,
-            'orderby' => 'created_at',
-            'order'   => 'DESC',
-        ];
-        $args = array_merge($defaults, $args);
+		return $suggestion_id;
+	}
 
-        $where = ['1=1'];
-        $params = [];
+	/**
+	 * Busca uma sugestão por ID.
+	 *
+	 * @param int $suggestion_id ID da sugestão.
+	 * @return object|null
+	 */
+	public function get( $suggestion_id ) {
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin's own table; not available via WP_Query; table name is $wpdb->prefix (trusted); id via %d placeholder.
+		return $this->wpdb->get_row( $this->wpdb->prepare( "SELECT * FROM {$this->table} WHERE id = %d", (int) $suggestion_id ) );
+	}
 
-        if (!empty($args['status'])) {
-            $where[] = 'status = %s';
-            $params[] = $args['status'];
-        }
-        if (!empty($args['item_id'])) {
-            $where[] = 'item_id = %d';
-            $params[] = (int) $args['item_id'];
-        }
+	/**
+	 * Lista sugestões com filtros.
+	 *
+	 * @param array $args status, item_id, limit, offset, orderby, order.
+	 * @return array
+	 */
+	public function list( $args = array() ) {
+		$defaults = array(
+			'status'  => null,
+			'item_id' => null,
+			'limit'   => 50,
+			'offset'  => 0,
+			'orderby' => 'created_at',
+			'order'   => 'DESC',
+		);
+		$args = array_merge( $defaults, $args );
 
-        $orderby = in_array($args['orderby'], ['created_at', 'status', 'item_id'], true) ? $args['orderby'] : 'created_at';
-        $order   = strtoupper($args['order']) === 'ASC' ? 'ASC' : 'DESC';
-        $limit   = max(1, min(200, (int) $args['limit']));
-        $offset  = max(0, (int) $args['offset']);
+		$where  = array( '1=1' );
+		$params = array();
 
-        $sql = "SELECT * FROM {$this->table} WHERE " . implode(' AND ', $where)
-             . " ORDER BY {$orderby} {$order} LIMIT {$limit} OFFSET {$offset}";
+		if ( ! empty( $args['status'] ) ) {
+			$where[]  = 'status = %s';
+			$params[] = $args['status'];
+		}
+		if ( ! empty( $args['item_id'] ) ) {
+			$where[]  = 'item_id = %d';
+			$params[] = (int) $args['item_id'];
+		}
 
-        if (!empty($params)) {
-            $sql = $this->wpdb->prepare($sql, $params);
-        }
+		// orderby/order validados contra allowlist antes de interpolar.
+		$orderby = in_array( $args['orderby'], array( 'created_at', 'status', 'item_id' ), true ) ? $args['orderby'] : 'created_at';
+		$order   = 'ASC' === strtoupper( $args['order'] ) ? 'ASC' : 'DESC';
+		$limit   = max( 1, min( 200, (int) $args['limit'] ) );
+		$offset  = max( 0, (int) $args['offset'] );
 
-        return $this->wpdb->get_results($sql);
-    }
+		$sql = "SELECT * FROM {$this->table} WHERE " . implode( ' AND ', $where )
+			. " ORDER BY {$orderby} {$order} LIMIT {$limit} OFFSET {$offset}";
 
-    public function count_by_status() {
-        $rows = $this->wpdb->get_results("SELECT status, COUNT(*) AS total FROM {$this->table} GROUP BY status");
-        $out = [
-            self::STATUS_PENDING  => 0,
-            self::STATUS_APPROVED => 0,
-            self::STATUS_REJECTED => 0,
-            self::STATUS_STALE    => 0,
-        ];
-        foreach ($rows ?: [] as $r) {
-            $out[$r->status] = (int) $r->total;
-        }
-        return $out;
-    }
+		if ( ! empty( $params ) ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql composed from %s/%d placeholders; user input bound via prepare(); ORDER BY/LIMIT from validated allowlist/int casts.
+			$sql = $this->wpdb->prepare( $sql, $params );
+		}
 
-    public function approve($suggestion_id, $reviewer_user_id = null, $notes = null) {
-        $suggestion = $this->get($suggestion_id);
-        if (!$suggestion) {
-            return new \WP_Error('tmc_not_found', 'Sugestão não encontrada.');
-        }
-        if ($suggestion->status === self::STATUS_APPROVED) {
-            return new \WP_Error('tmc_already_approved', 'Sugestão já aprovada.');
-        }
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin's own table; admin listing; ORDER BY/LIMIT validated against allowlist/int casts above; WHERE values bound via prepare().
+		return $this->wpdb->get_results( $sql );
+	}
 
-        $result = $this->apply_to_tainacan($suggestion);
-        if (is_wp_error($result)) {
-            return $result;
-        }
+	/**
+	 * Conta sugestões agrupadas por status.
+	 *
+	 * @return array<string,int>
+	 */
+	public function count_by_status() {
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin's own table; aggregate COUNT/GROUP BY not expressible via WP_Query; no user input in query.
+		$rows = $this->wpdb->get_results( "SELECT status, COUNT(*) AS total FROM {$this->table} GROUP BY status" );
+		$out  = array(
+			self::STATUS_PENDING  => 0,
+			self::STATUS_APPROVED => 0,
+			self::STATUS_REJECTED => 0,
+			self::STATUS_STALE    => 0,
+		);
+		if ( ! is_array( $rows ) ) {
+			return $out;
+		}
+		foreach ( $rows as $r ) {
+			$out[ $r->status ] = (int) $r->total;
+		}
+		return $out;
+	}
 
-        $this->wpdb->update(
-            $this->table,
-            [
-                'status'       => self::STATUS_APPROVED,
-                'reviewed_by'  => $reviewer_user_id ? (int) $reviewer_user_id : null,
-                'reviewed_at'  => current_time('mysql'),
-                'review_notes' => $notes ? substr((string) $notes, 0, 2000) : null,
-            ],
-            ['id' => (int) $suggestion_id]
-        );
+	/**
+	 * Aprova uma sugestão e aplica o valor no item Tainacan.
+	 *
+	 * @param int      $suggestion_id    ID da sugestão.
+	 * @param int|null $reviewer_user_id ID do revisor.
+	 * @param string|null $notes         Notas de revisão.
+	 * @return true|\WP_Error
+	 */
+	public function approve( $suggestion_id, $reviewer_user_id = null, $notes = null ) {
+		$suggestion = $this->get( $suggestion_id );
+		if ( ! $suggestion ) {
+			return new \WP_Error( 'tmc_not_found', __( 'Sugestão não encontrada.', 'tainacan-metadata-crowdsource' ) );
+		}
+		if ( self::STATUS_APPROVED === $suggestion->status ) {
+			return new \WP_Error( 'tmc_already_approved', __( 'Sugestão já aprovada.', 'tainacan-metadata-crowdsource' ) );
+		}
 
-        do_action('tmc_suggestion_approved', $suggestion_id, $suggestion);
-        return true;
-    }
+		$result = $this->apply_to_tainacan( $suggestion );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
 
-    public function reject($suggestion_id, $reviewer_user_id = null, $notes = null) {
-        $suggestion = $this->get($suggestion_id);
-        if (!$suggestion) {
-            return new \WP_Error('tmc_not_found', 'Sugestão não encontrada.');
-        }
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin's own table; write path via $wpdb->update (auto-prepared); caching irrelevant.
+		$this->wpdb->update(
+			$this->table,
+			array(
+				'status'       => self::STATUS_APPROVED,
+				'reviewed_by'  => $reviewer_user_id ? (int) $reviewer_user_id : null,
+				'reviewed_at'  => current_time( 'mysql' ),
+				'review_notes' => $notes ? substr( (string) $notes, 0, 2000 ) : null,
+			),
+			array( 'id' => (int) $suggestion_id )
+		);
 
-        $this->wpdb->update(
-            $this->table,
-            [
-                'status'       => self::STATUS_REJECTED,
-                'reviewed_by'  => $reviewer_user_id ? (int) $reviewer_user_id : null,
-                'reviewed_at'  => current_time('mysql'),
-                'review_notes' => $notes ? substr((string) $notes, 0, 2000) : null,
-            ],
-            ['id' => (int) $suggestion_id]
-        );
+		do_action( 'tmc_suggestion_approved', $suggestion_id, $suggestion );
+		return true;
+	}
 
-        do_action('tmc_suggestion_rejected', $suggestion_id, $suggestion);
-        return true;
-    }
+	/**
+	 * Rejeita uma sugestão.
+	 *
+	 * @param int      $suggestion_id    ID da sugestão.
+	 * @param int|null $reviewer_user_id ID do revisor.
+	 * @param string|null $notes         Notas de revisão.
+	 * @return true|\WP_Error
+	 */
+	public function reject( $suggestion_id, $reviewer_user_id = null, $notes = null ) {
+		$suggestion = $this->get( $suggestion_id );
+		if ( ! $suggestion ) {
+			return new \WP_Error( 'tmc_not_found', __( 'Sugestão não encontrada.', 'tainacan-metadata-crowdsource' ) );
+		}
 
-    /**
-     * Marca como 'stale' sugestões pendentes cujo valor original mudou desde a submissão.
-     * Chamado via save_post dos tipos de item Tainacan.
-     */
-    public function mark_stale_for_item($item_id) {
-        $item_id = (int) $item_id;
-        if ($item_id <= 0) return 0;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin's own table; write path via $wpdb->update (auto-prepared); caching irrelevant.
+		$this->wpdb->update(
+			$this->table,
+			array(
+				'status'       => self::STATUS_REJECTED,
+				'reviewed_by'  => $reviewer_user_id ? (int) $reviewer_user_id : null,
+				'reviewed_at'  => current_time( 'mysql' ),
+				'review_notes' => $notes ? substr( (string) $notes, 0, 2000 ) : null,
+			),
+			array( 'id' => (int) $suggestion_id )
+		);
 
-        $pending = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT id, metadatum_id, old_value_hash FROM {$this->table}
-             WHERE item_id = %d AND status = %s",
-            $item_id,
-            self::STATUS_PENDING
-        ));
+		do_action( 'tmc_suggestion_rejected', $suggestion_id, $suggestion );
+		return true;
+	}
 
-        if (empty($pending)) return 0;
+	/**
+	 * Marca como 'stale' sugestões pendentes cujo valor original mudou.
+	 *
+	 * @param int $item_id ID do item Tainacan.
+	 * @return int Quantidade de sugestões marcadas.
+	 */
+	public function mark_stale_for_item( $item_id ) {
+		$item_id = (int) $item_id;
+		if ( $item_id <= 0 ) {
+			return 0;
+		}
 
-        $marked = 0;
-        foreach ($pending as $row) {
-            $current = $this->get_current_metadatum_value($item_id, (int) $row->metadatum_id);
-            $current_hash = $this->hash_value($current['value_text'] ?? '');
-            if ($current_hash !== $row->old_value_hash) {
-                $this->wpdb->update(
-                    $this->table,
-                    ['status' => self::STATUS_STALE],
-                    ['id' => (int) $row->id]
-                );
-                $marked++;
-            }
-        }
-        return $marked;
-    }
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin's own table; not available via WP_Query; table name trusted; values via %d/%s placeholders.
+		$pending = $this->wpdb->get_results(
+			$this->wpdb->prepare(
+				"SELECT id, metadatum_id, old_value_hash FROM {$this->table} WHERE item_id = %d AND status = %s",
+				$item_id,
+				self::STATUS_PENDING
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
-    /**
-     * Retorna metadados editáveis de um item (para o formulário público).
-     */
-    public function get_item_metadata_for_form($item_id) {
-        $item_id = (int) $item_id;
-        if (!class_exists('\Tainacan\Repositories\Items')) {
-            return [];
-        }
+		if ( empty( $pending ) ) {
+			return 0;
+		}
 
-        try {
-            $items_repo = \Tainacan\Repositories\Items::get_instance();
-            $item = $items_repo->fetch($item_id);
-            if (!$item || is_wp_error($item)) return [];
+		$marked = 0;
+		foreach ( $pending as $row ) {
+			$current      = $this->get_current_metadatum_value( $item_id, (int) $row->metadatum_id );
+			$current_hash = $this->hash_value( $current['value_text'] ?? '' );
+			if ( $current_hash !== $row->old_value_hash ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin's own table; write path via $wpdb->update (auto-prepared); caching irrelevant.
+				$this->wpdb->update(
+					$this->table,
+					array( 'status' => self::STATUS_STALE ),
+					array( 'id' => (int) $row->id )
+				);
+				++$marked;
+			}
+		}
+		return $marked;
+	}
 
-            $item_metadata = $item->get_metadata();
-            if (empty($item_metadata)) return [];
+	/**
+	 * Retorna os metadados editáveis de um item para o formulário público.
+	 *
+	 * @param int $item_id ID do item Tainacan.
+	 * @return array
+	 */
+	public function get_item_metadata_for_form( $item_id ) {
+		$item_id = (int) $item_id;
+		if ( ! class_exists( '\Tainacan\Repositories\Items' ) ) {
+			return array();
+		}
 
-            $out = [];
-            foreach ($item_metadata as $im) {
-                $metadatum = $im->get_metadatum();
-                if (!$metadatum) continue;
+		try {
+			$items_repo = \Tainacan\Repositories\Items::get_instance();
+			$item       = $items_repo->fetch( $item_id );
+			if ( ! $item || is_wp_error( $item ) ) {
+				return array();
+			}
 
-                $value = $im->get_value();
-                $value_text = is_array($value)
-                    ? implode(', ', array_map('strval', $value))
-                    : (string) $value;
+			$item_metadata = $item->get_metadata();
+			if ( empty( $item_metadata ) ) {
+				return array();
+			}
 
-                $out[] = [
-                    'metadatum_id' => $metadatum->get_id(),
-                    'slug'         => $metadatum->get_slug(),
-                    'label'        => $metadatum->get_name(),
-                    'current'      => $value_text,
-                    'is_multiple'  => $metadatum->is_multiple(),
-                ];
-            }
-            return $out;
-        } catch (\Throwable $e) {
-            return [];
-        }
-    }
+			$out = array();
+			foreach ( $item_metadata as $im ) {
+				$metadatum = $im->get_metadatum();
+				if ( ! $metadatum ) {
+					continue;
+				}
 
-    private function get_current_metadatum_value($item_id, $metadatum_id) {
-        $out = ['value_text' => '', 'label' => null, 'slug' => null, 'collection_id' => null];
+				$value      = $im->get_value();
+				$value_text = is_array( $value )
+					? implode( ', ', array_map( 'strval', $value ) )
+					: (string) $value;
 
-        if (!class_exists('\Tainacan\Repositories\Items')) return $out;
+				$out[] = array(
+					'metadatum_id' => $metadatum->get_id(),
+					'slug'         => $metadatum->get_slug(),
+					'label'        => $metadatum->get_name(),
+					'current'      => $value_text,
+					'is_multiple'  => $metadatum->is_multiple(),
+				);
+			}
+			return $out;
+		} catch ( \Throwable $e ) {
+			return array();
+		}
+	}
 
-        try {
-            $items_repo = \Tainacan\Repositories\Items::get_instance();
-            $item = $items_repo->fetch((int) $item_id);
-            if (!$item || is_wp_error($item)) return $out;
+	/**
+	 * Lê o valor atual de um metadado de um item via repositórios Tainacan.
+	 *
+	 * @param int $item_id      ID do item.
+	 * @param int $metadatum_id ID do metadado.
+	 * @return array value_text, label, slug, collection_id.
+	 */
+	private function get_current_metadatum_value( $item_id, $metadatum_id ) {
+		$out = array(
+			'value_text'    => '',
+			'label'         => null,
+			'slug'          => null,
+			'collection_id' => null,
+		);
 
-            $out['collection_id'] = $item->get_collection_id();
+		if ( ! class_exists( '\Tainacan\Repositories\Items' ) ) {
+			return $out;
+		}
 
-            $metadata_repo = \Tainacan\Repositories\Metadata::get_instance();
-            $metadatum = $metadata_repo->fetch((int) $metadatum_id);
-            if (!$metadatum || is_wp_error($metadatum)) return $out;
+		try {
+			$items_repo = \Tainacan\Repositories\Items::get_instance();
+			$item       = $items_repo->fetch( (int) $item_id );
+			if ( ! $item || is_wp_error( $item ) ) {
+				return $out;
+			}
 
-            $out['slug']  = $metadatum->get_slug();
-            $out['label'] = $metadatum->get_name();
+			$out['collection_id'] = $item->get_collection_id();
 
-            $im_repo = \Tainacan\Repositories\Item_Metadata::get_instance();
-            $im = new \Tainacan\Entities\Item_Metadata_Entity($item, $metadatum);
-            $im = $im_repo->fetch($im);
+			$metadata_repo = \Tainacan\Repositories\Metadata::get_instance();
+			$metadatum     = $metadata_repo->fetch( (int) $metadatum_id );
+			if ( ! $metadatum || is_wp_error( $metadatum ) ) {
+				return $out;
+			}
 
-            if ($im) {
-                $value = $im->get_value();
-                $out['value_text'] = is_array($value)
-                    ? implode('||', array_map('strval', $value))
-                    : (string) $value;
-            }
-        } catch (\Throwable $e) {
-            // silencia
-        }
+			$out['slug']  = $metadatum->get_slug();
+			$out['label'] = $metadatum->get_name();
 
-        return $out;
-    }
+			$im_repo = \Tainacan\Repositories\Item_Metadata::get_instance();
+			$im      = new \Tainacan\Entities\Item_Metadata_Entity( $item, $metadatum );
+			$im      = $im_repo->fetch( $im );
 
-    private function apply_to_tainacan($suggestion) {
-        if (!class_exists('\Tainacan\Repositories\Items')) {
-            return new \WP_Error('tmc_tainacan_missing', 'Tainacan não está disponível.');
-        }
+			if ( $im ) {
+				$value             = $im->get_value();
+				$out['value_text'] = is_array( $value )
+					? implode( '||', array_map( 'strval', $value ) )
+					: (string) $value;
+			}
+		} catch ( \Throwable $e ) {
+			// Silencia: item/metadado pode ter sido removido; retorna defaults.
+			return $out;
+		}
 
-        try {
-            $items_repo = \Tainacan\Repositories\Items::get_instance();
-            $item = $items_repo->fetch((int) $suggestion->item_id);
-            if (!$item || is_wp_error($item)) {
-                return new \WP_Error('tmc_item_missing', 'Item Tainacan não encontrado.');
-            }
+		return $out;
+	}
 
-            $metadata_repo = \Tainacan\Repositories\Metadata::get_instance();
-            $metadatum = $metadata_repo->fetch((int) $suggestion->metadatum_id);
-            if (!$metadatum || is_wp_error($metadatum)) {
-                return new \WP_Error('tmc_metadatum_missing', 'Metadado não encontrado.');
-            }
+	/**
+	 * Aplica o valor sugerido ao item Tainacan via Item_Metadata.
+	 *
+	 * @param object $suggestion Linha da sugestão.
+	 * @return true|\WP_Error
+	 */
+	private function apply_to_tainacan( $suggestion ) {
+		if ( ! class_exists( '\Tainacan\Repositories\Items' ) ) {
+			return new \WP_Error( 'tmc_tainacan_missing', __( 'Tainacan não está disponível.', 'tainacan-metadata-crowdsource' ) );
+		}
 
-            $im_repo = \Tainacan\Repositories\Item_Metadata::get_instance();
-            $im = new \Tainacan\Entities\Item_Metadata_Entity($item, $metadatum);
+		try {
+			$items_repo = \Tainacan\Repositories\Items::get_instance();
+			$item       = $items_repo->fetch( (int) $suggestion->item_id );
+			if ( ! $item || is_wp_error( $item ) ) {
+				return new \WP_Error( 'tmc_item_missing', __( 'Item Tainacan não encontrado.', 'tainacan-metadata-crowdsource' ) );
+			}
 
-            if ($metadatum->is_multiple()) {
-                $values = array_map('trim', explode('||', (string) $suggestion->new_value));
-                $im->set_value($values);
-            } else {
-                $im->set_value((string) $suggestion->new_value);
-            }
+			$metadata_repo = \Tainacan\Repositories\Metadata::get_instance();
+			$metadatum     = $metadata_repo->fetch( (int) $suggestion->metadatum_id );
+			if ( ! $metadatum || is_wp_error( $metadatum ) ) {
+				return new \WP_Error( 'tmc_metadatum_missing', __( 'Metadado não encontrado.', 'tainacan-metadata-crowdsource' ) );
+			}
 
-            if (!$im->validate()) {
-                return new \WP_Error('tmc_invalid_value', 'Valor inválido: ' . wp_json_encode($im->get_errors()));
-            }
+			$im_repo = \Tainacan\Repositories\Item_Metadata::get_instance();
+			$im      = new \Tainacan\Entities\Item_Metadata_Entity( $item, $metadatum );
 
-            $im_repo->insert($im);
-            return true;
-        } catch (\Throwable $e) {
-            return new \WP_Error('tmc_apply_error', $e->getMessage());
-        }
-    }
+			if ( $metadatum->is_multiple() ) {
+				$values = array_map( 'trim', explode( '||', (string) $suggestion->new_value ) );
+				$im->set_value( $values );
+			} else {
+				$im->set_value( (string) $suggestion->new_value );
+			}
 
-    private function hash_value($value) {
-        return hash('sha256', (string) $value);
-    }
+			if ( ! $im->validate() ) {
+				return new \WP_Error(
+					'tmc_invalid_value',
+					sprintf(
+						/* translators: %s: lista de erros de validação retornada pelo Tainacan. */
+						__( 'Valor inválido: %s', 'tainacan-metadata-crowdsource' ),
+						wp_json_encode( $im->get_errors() )
+					)
+				);
+			}
 
-    private function notify_moderators($suggestion_id, $data) {
-        if (!(int) get_option('tmc_notify_email', 1)) return;
+			$im_repo->insert( $im );
+			return true;
+		} catch ( \Throwable $e ) {
+			return new \WP_Error( 'tmc_apply_error', $e->getMessage() );
+		}
+	}
 
-        $recipient = get_option('tmc_notify_to', get_option('admin_email'));
-        if (!$recipient) return;
+	/**
+	 * Gera o hash de um valor (para detecção de "stale").
+	 *
+	 * @param string $value Valor original.
+	 * @return string
+	 */
+	private function hash_value( $value ) {
+		return hash( 'sha256', (string) $value );
+	}
 
-        $item_title = get_the_title($data['item_id']) ?: ('#' . $data['item_id']);
-        $subject = sprintf('[Tainacan Crowdsource] Nova sugestão — %s', $item_title);
+	/**
+	 * Notifica o moderador por e-mail sobre uma nova sugestão.
+	 *
+	 * @param int   $suggestion_id ID da sugestão.
+	 * @param array $data          Dados da sugestão.
+	 * @return void
+	 */
+	private function notify_moderators( $suggestion_id, $data ) {
+		if ( ! (int) get_option( 'tmc_notify_email', 1 ) ) {
+			return;
+		}
 
-        $admin_url = admin_url('admin.php?page=tainacan-metadata-crowdsource');
+		$recipient = get_option( 'tmc_notify_to', get_option( 'admin_email' ) );
+		if ( ! $recipient ) {
+			return;
+		}
 
-        $body = "Nova sugestão de metadado recebida.\n\n"
-              . "Item: {$item_title} (ID {$data['item_id']})\n"
-              . "Metadado: " . ($data['metadatum_label'] ?? ('#' . $data['metadatum_id'])) . "\n"
-              . "Valor atual: " . ($data['old_value'] ?: '(vazio)') . "\n"
-              . "Valor sugerido: " . $data['new_value'] . "\n"
-              . "Motivo: " . ($data['reason'] ?: '(não informado)') . "\n"
-              . "Colaborador: " . ($data['submitter_name'] ?: 'anônimo') . "\n\n"
-              . "Revisar: {$admin_url}\n";
+		$item_title = get_the_title( $data['item_id'] );
+		if ( ! $item_title ) {
+			$item_title = '#' . $data['item_id'];
+		}
 
-        wp_mail($recipient, $subject, $body);
-    }
+		$subject = sprintf(
+			/* translators: %s: título do item Tainacan. */
+			__( '[Tainacan Crowdsource] Nova sugestão — %s', 'tainacan-metadata-crowdsource' ),
+			$item_title
+		);
+
+		$admin_url = admin_url( 'admin.php?page=tainacan-metadata-crowdsource' );
+
+		$metadatum_label = $data['metadatum_label'] ?? ( '#' . $data['metadatum_id'] );
+		$old_value       = '' !== (string) $data['old_value'] ? $data['old_value'] : __( '(vazio)', 'tainacan-metadata-crowdsource' );
+		$reason          = ! empty( $data['reason'] ) ? $data['reason'] : __( '(não informado)', 'tainacan-metadata-crowdsource' );
+		$submitter       = ! empty( $data['submitter_name'] ) ? $data['submitter_name'] : __( 'anônimo', 'tainacan-metadata-crowdsource' );
+
+		$lines = array(
+			__( 'Nova sugestão de metadado recebida.', 'tainacan-metadata-crowdsource' ),
+			'',
+			/* translators: 1: título do item, 2: ID do item. */
+			sprintf( __( 'Item: %1$s (ID %2$d)', 'tainacan-metadata-crowdsource' ), $item_title, (int) $data['item_id'] ),
+			/* translators: %s: rótulo ou ID do metadado. */
+			sprintf( __( 'Metadado: %s', 'tainacan-metadata-crowdsource' ), $metadatum_label ),
+			/* translators: %s: valor atual do metadado. */
+			sprintf( __( 'Valor atual: %s', 'tainacan-metadata-crowdsource' ), $old_value ),
+			/* translators: %s: novo valor sugerido. */
+			sprintf( __( 'Valor sugerido: %s', 'tainacan-metadata-crowdsource' ), $data['new_value'] ),
+			/* translators: %s: motivo informado pelo colaborador. */
+			sprintf( __( 'Motivo: %s', 'tainacan-metadata-crowdsource' ), $reason ),
+			/* translators: %s: nome do colaborador. */
+			sprintf( __( 'Colaborador: %s', 'tainacan-metadata-crowdsource' ), $submitter ),
+			'',
+			/* translators: %s: URL do painel de revisão. */
+			sprintf( __( 'Revisar: %s', 'tainacan-metadata-crowdsource' ), $admin_url ),
+		);
+
+		wp_mail( $recipient, $subject, implode( "\n", $lines ) );
+	}
 }

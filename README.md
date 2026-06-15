@@ -6,7 +6,7 @@ Plugin WordPress independente que permite aos visitantes sugerir correções nos
 
 1. O administrador insere o shortcode `[tmc_suggest_form item_id="123"]` na página de um item (ou em um template).
 2. O visitante (anônimo) vê cada metadado do item e pode sugerir um novo valor para qualquer campo.
-3. Após confirmar o hCaptcha, a sugestão fica pendente no painel administrativo.
+3. Após responder a verificação anti-spam local (uma soma simples), as sugestões ficam pendentes no painel administrativo.
 4. A equipe aprova ou rejeita. Ao aprovar, o valor sugerido é gravado no item Tainacan automaticamente.
 5. Se o valor original mudar antes da revisão (ex: equipe editou o item), a sugestão é marcada como **desatualizada** para que o revisor reavalie.
 
@@ -15,13 +15,29 @@ Plugin WordPress independente que permite aos visitantes sugerir correções nos
 - WordPress 6.0+
 - PHP 8.0+
 - [Tainacan](https://tainacan.org) instalado e ativado
-- Conta gratuita no [hCaptcha](https://www.hcaptcha.com) (site key + secret)
+
+## Anti-spam
+
+Verificação 100% local, sem terceiros e sem CDN:
+
+- **Pergunta aritmética** (token de uso único guardado em transient, carregado via REST para ser imune a page cache).
+- **Honeypot** — campo oculto que apenas bots preenchem.
+- **Time-trap** — submissões rápidas demais para serem humanas são rejeitadas.
+- **Rate-limit** por IP (1 envio a cada 15s).
 
 ## Instalação
 
 1. Copie a pasta para `wp-content/plugins/`
 2. Ative em **Plugins → Instalados**
-3. Configure as chaves hCaptcha em **Crowdsource → Configurações**
+3. Defina o e-mail do moderador em **Crowdsource → Configurações**
+
+## Desenvolvimento
+
+```
+composer install
+composer lint           # phpcs --standard=phpcs.xml.dist
+wp i18n make-pot . languages/tainacan-metadata-crowdsource.pot
+```
 
 ## Uso
 
@@ -51,7 +67,8 @@ tainacan-metadata-crowdsource/
 
 | Método | Endpoint                                | Acesso  |
 |--------|----------------------------------------|---------|
-| POST   | `/wp-json/tmc/v1/suggestions`           | Público (com hCaptcha) |
+| GET    | `/wp-json/tmc/v1/captcha`                | Público (gera desafio anti-spam) |
+| POST   | `/wp-json/tmc/v1/suggestions`           | Público (captcha + honeypot + rate-limit) |
 | GET    | `/wp-json/tmc/v1/suggestions`           | `manage_options` |
 | POST   | `/wp-json/tmc/v1/suggestions/{id}/approve` | `manage_options` |
 | POST   | `/wp-json/tmc/v1/suggestions/{id}/reject`  | `manage_options` |
