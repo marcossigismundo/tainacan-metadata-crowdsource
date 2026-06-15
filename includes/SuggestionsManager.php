@@ -135,7 +135,7 @@ class SuggestionsManager {
 			'orderby' => 'created_at',
 			'order'   => 'DESC',
 		);
-		$args = array_merge( $defaults, $args );
+		$args     = array_merge( $defaults, $args );
 
 		$where  = array( '1=1' );
 		$params = array();
@@ -193,8 +193,8 @@ class SuggestionsManager {
 	/**
 	 * Aprova uma sugestão e aplica o valor no item Tainacan.
 	 *
-	 * @param int      $suggestion_id    ID da sugestão.
-	 * @param int|null $reviewer_user_id ID do revisor.
+	 * @param int         $suggestion_id    ID da sugestão.
+	 * @param int|null    $reviewer_user_id ID do revisor.
 	 * @param string|null $notes         Notas de revisão.
 	 * @return true|\WP_Error
 	 */
@@ -231,8 +231,8 @@ class SuggestionsManager {
 	/**
 	 * Rejeita uma sugestão.
 	 *
-	 * @param int      $suggestion_id    ID da sugestão.
-	 * @param int|null $reviewer_user_id ID do revisor.
+	 * @param int         $suggestion_id    ID da sugestão.
+	 * @param int|null    $reviewer_user_id ID do revisor.
 	 * @param string|null $notes         Notas de revisão.
 	 * @return true|\WP_Error
 	 */
