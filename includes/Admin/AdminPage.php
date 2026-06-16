@@ -68,23 +68,80 @@ class AdminPage extends \Tainacan\Pages {
 	/**
 	 * Registra o submenu no item raiz do Tainacan e o hook de carga.
 	 *
+	 * Posição alta (80) para empurrar para o final do menu lateral, abaixo
+	 * de Repository / Other; do contrário, posições baixas como `3`
+	 * intercalam o item entre os filhos de Repository visualmente.
+	 *
+	 * Cap `read` segue o padrão das páginas nativas do Tainacan (Roles,
+	 * Settings); validamos `manage_options` dentro da página/REST antes
+	 * de qualquer ação destrutiva.
+	 *
 	 * @return void
 	 */
 	public function add_admin_menu() {
+		// SVG do Tainacan (mensagem/comments). Cai em string vazia se o
+		// helper não retornar nada — ainda assim o texto e o link funcionam.
+		$icon_svg = method_exists( $this, 'get_svg_icon' ) ? $this->get_svg_icon( 'note' ) : '';
+
 		$this->page_suffix = add_submenu_page(
 			$this->tainacan_root_menu_slug,
 			__( 'Crowdsource', 'tainacan-metadata-crowdsource' ),
-			'<span class="icon"><i class="tainacan-icon tainacan-icon-comments"></i></span>'
-				. '<span class="menu-text">' . __( 'Crowdsource', 'tainacan-metadata-crowdsource' )
+			'<span class="icon" aria-hidden="true">' . $icon_svg . '</span>'
+				. '<span class="menu-text">' . esc_html__( 'Crowdsource', 'tainacan-metadata-crowdsource' )
 				. $this->menu_badge() . '</span>',
-			'manage_options',
+			'read',
 			$this->get_page_slug(),
 			array( &$this, 'render_page' ),
-			11
+			80
 		);
 
 		if ( $this->page_suffix ) {
 			add_action( 'load-' . $this->page_suffix, array( &$this, 'load_page' ) );
+		}
+
+		// Remove qualquer menu top-level legado deixado por versões antigas
+		// (cache de plugin, arquivos zumbis, opcache não invalidado), para
+		// não confundir o usuário com dois cliques que levam a páginas
+		// diferentes — um para a integração nova e outro para o renderer antigo.
+		$this->prune_legacy_menu();
+	}
+
+	/**
+	 * Remove o item de menu top-level antigo `tainacan-metadata-crowdsource`,
+	 * se algum vestígio dele tiver sobrevivido a atualizações sucessivas.
+	 *
+	 * @return void
+	 */
+	private function prune_legacy_menu() {
+		global $menu, $submenu;
+
+		if ( is_array( $menu ) ) {
+			foreach ( $menu as $key => $item ) {
+				if ( isset( $item[2] ) && 'tainacan-metadata-crowdsource' === $item[2] ) {
+					unset( $menu[ $key ] );
+				}
+			}
+		}
+		if ( isset( $submenu['tainacan-metadata-crowdsource'] ) ) {
+			unset( $submenu['tainacan-metadata-crowdsource'] );
+		}
+
+		// Redireciona URLs antigas (?page=tainacan-metadata-crowdsource) para
+		// a nova página integrada, para bookmarks e qualquer link em e-mails
+		// já enviados não caírem em "página não encontrada".
+		add_action( 'admin_init', array( $this, 'redirect_legacy_url' ) );
+	}
+
+	/**
+	 * Redireciona a URL antiga para a nova.
+	 *
+	 * @return void
+	 */
+	public function redirect_legacy_url() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only redirect; no state mutation.
+		if ( isset( $_GET['page'] ) && 'tainacan-metadata-crowdsource' === sanitize_key( wp_unslash( $_GET['page'] ) ) ) {
+			wp_safe_redirect( admin_url( 'admin.php?page=' . $this->get_page_slug() ) );
+			exit;
 		}
 	}
 
@@ -111,6 +168,15 @@ class AdminPage extends \Tainacan\Pages {
 		register_setting(
 			'tmc_settings',
 			'tmc_enabled',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'absint',
+				'default'           => 1,
+			)
+		);
+		register_setting(
+			'tmc_settings',
+			'tmc_autoinject',
 			array(
 				'type'              => 'boolean',
 				'sanitize_callback' => 'absint',
@@ -344,6 +410,13 @@ class AdminPage extends \Tainacan\Pages {
 				<tr>
 					<th scope="row"><label for="tmc_enabled"><?php esc_html_e( 'Habilitar sugestões', 'tainacan-metadata-crowdsource' ); ?></label></th>
 					<td><label><input type="checkbox" id="tmc_enabled" name="tmc_enabled" value="1" <?php checked( 1, (int) get_option( 'tmc_enabled', 1 ) ); ?>> <?php esc_html_e( 'Aceitar novas sugestões do público', 'tainacan-metadata-crowdsource' ); ?></label></td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="tmc_autoinject"><?php esc_html_e( 'Exibir nas páginas de item', 'tainacan-metadata-crowdsource' ); ?></label></th>
+					<td>
+						<label><input type="checkbox" id="tmc_autoinject" name="tmc_autoinject" value="1" <?php checked( 1, (int) get_option( 'tmc_autoinject', 1 ) ); ?>> <?php esc_html_e( 'Inserir automaticamente um formulário recolhível ao final de cada página de item Tainacan', 'tainacan-metadata-crowdsource' ); ?></label>
+						<p class="description"><?php esc_html_e( 'Desative para usar apenas o shortcode manual.', 'tainacan-metadata-crowdsource' ); ?></p>
+					</td>
 				</tr>
 				<tr>
 					<th scope="row"><label for="tmc_notify_email"><?php esc_html_e( 'Notificar por e-mail', 'tainacan-metadata-crowdsource' ); ?></label></th>
