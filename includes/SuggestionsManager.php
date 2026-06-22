@@ -550,41 +550,17 @@ class SuggestionsManager {
 	 */
 	private function apply_description( $suggestion ) {
 		$item_id = (int) $suggestion->item_id;
-		$value   = wp_kses_post( (string) $suggestion->new_value );
 
 		if ( ! $this->is_valid_target_item( $item_id ) ) {
 			return new \WP_Error( 'tmc_item_missing', __( 'Item Tainacan não encontrado.', 'tainacan-metadata-crowdsource' ) );
 		}
 
-		// Prefere a entidade Tainacan (respeita hooks); cai para wp_update_post.
-		if ( class_exists( '\Tainacan\Repositories\Items' ) ) {
-			try {
-				$items_repo = \Tainacan\Repositories\Items::get_instance();
-				$item       = $items_repo->fetch( $item_id );
-				if ( $item && ! is_wp_error( $item ) && method_exists( $item, 'set_description' ) ) {
-					$item->set_description( $value );
-					if ( $item->validate() ) {
-						$items_repo->insert( $item );
-						return true;
-					}
-					return new \WP_Error(
-						'tmc_invalid_value',
-						sprintf(
-							/* translators: %s: lista de erros de validação retornada pelo Tainacan. */
-							__( 'Valor inválido: %s', 'tainacan-metadata-crowdsource' ),
-							wp_json_encode( $item->get_errors() )
-						)
-					);
-				}
-			} catch ( \Throwable $e ) {
-				return new \WP_Error( 'tmc_apply_error', $e->getMessage() );
-			}
-		}
-
+		// A descrição é o post_content do item (campo core do WordPress).
+		// wp_update_post dispara save_post, ao qual o Tainacan reage para reindexar.
 		$updated = wp_update_post(
 			array(
 				'ID'           => $item_id,
-				'post_content' => $value,
+				'post_content' => wp_kses_post( (string) $suggestion->new_value ),
 			),
 			true
 		);
