@@ -10,6 +10,7 @@ namespace TMC\Core;
 use TMC\SuggestionsManager;
 use TMC\REST\API;
 use TMC\Frontend\Shortcode;
+use TMC\Frontend\AutoInject;
 use TMC\Admin\AdminPage;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -52,6 +53,9 @@ class Plugin {
 
 		// Shortcode público.
 		( new Shortcode() )->register();
+
+		// Auto-injeção do formulário nas páginas de item Tainacan (front-end).
+		( new AutoInject() )->register();
 
 		// Página de administração integrada ao menu Tainacan via
 		// \Tainacan\Pages. Se o Tainacan não estiver ativo, mostra

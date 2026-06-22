@@ -69,7 +69,7 @@ class Shortcode {
 	/**
 	 * Renderiza o formulário de sugestões para um item.
 	 *
-	 * @param array $atts Atributos do shortcode (item_id, title).
+	 * @param array $atts Atributos do shortcode (item_id, title, collapsible).
 	 * @return string HTML do formulário.
 	 */
 	public function render( $atts ) {
@@ -79,12 +79,15 @@ class Shortcode {
 
 		$atts = shortcode_atts(
 			array(
-				'item_id' => 0,
-				'title'   => __( 'Sugerir correção nos metadados', 'tainacan-metadata-crowdsource' ),
+				'item_id'     => 0,
+				'title'       => __( 'Sugerir correção nos metadados', 'tainacan-metadata-crowdsource' ),
+				'collapsible' => 0,
 			),
 			$atts,
 			'tmc_suggest_form'
 		);
+
+		$collapsible = filter_var( $atts['collapsible'], FILTER_VALIDATE_BOOLEAN );
 
 		$item_id = (int) $atts['item_id'];
 		if ( $item_id <= 0 ) {
@@ -122,8 +125,13 @@ class Shortcode {
 
 		ob_start();
 		?>
+		<?php if ( $collapsible ) : ?>
+		<details class="tmc-widget tmc-collapsible" data-item-id="<?php echo esc_attr( $item_id ); ?>">
+			<summary class="tmc-summary"><?php echo esc_html( $atts['title'] ); ?></summary>
+		<?php else : ?>
 		<div class="tmc-widget" data-item-id="<?php echo esc_attr( $item_id ); ?>">
 			<h3 class="tmc-title"><?php echo esc_html( $atts['title'] ); ?></h3>
+		<?php endif; ?>
 			<p class="tmc-intro">
 				<?php esc_html_e( 'Identificou uma informação incorreta ou incompleta? Sugira uma correção. Cada campo é uma sugestão separada — preencha apenas os que deseja corrigir. Sua contribuição será revisada pela equipe antes de ser aplicada.', 'tainacan-metadata-crowdsource' ); ?>
 			</p>
@@ -186,7 +194,11 @@ class Shortcode {
 					<div class="tmc-feedback" role="status" aria-live="polite"></div>
 				</div>
 			</form>
+		<?php if ( $collapsible ) : ?>
+		</details>
+		<?php else : ?>
 		</div>
+		<?php endif; ?>
 		<?php
 		return ob_get_clean();
 	}

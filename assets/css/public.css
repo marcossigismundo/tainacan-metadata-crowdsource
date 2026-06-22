@@ -183,3 +183,43 @@
     background: #fdecea;
     border-left-color: #c92a2a;
 }
+
+/* Modo recolhível (auto-injeção nas páginas de item). */
+details.tmc-collapsible {
+    padding: 0;
+}
+
+details.tmc-collapsible > .tmc-summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 0.9em 1.25em;
+    font-size: 1.05em;
+    font-weight: 600;
+    color: #2271b1;
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+}
+
+details.tmc-collapsible > .tmc-summary::-webkit-details-marker {
+    display: none;
+}
+
+details.tmc-collapsible > .tmc-summary::before {
+    content: "✎";
+    font-weight: 400;
+}
+
+details.tmc-collapsible[open] > .tmc-summary {
+    border-bottom: 1px solid #e8e8e8;
+}
+
+details.tmc-collapsible > .tmc-intro,
+details.tmc-collapsible > .tmc-form {
+    padding-left: 1.25em;
+    padding-right: 1.25em;
+}
+
+details.tmc-collapsible > .tmc-form {
+    padding-bottom: 1.25em;
+}

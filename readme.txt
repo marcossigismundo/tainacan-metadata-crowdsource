@@ -16,7 +16,8 @@ Tainacan Metadata Crowdsource adiciona uma camada de curadoria colaborativa às 
 
 Principais recursos:
 
-* Formulário público por item via shortcode `[tmc_suggest_form item_id="123"]`.
+* Exibição automática: um formulário recolhível é inserido ao final de cada página de item Tainacan (tema clássico), sem configuração por item. Pode ser desligado.
+* Também disponível como shortcode `[tmc_suggest_form item_id="123"]` para colocação manual.
 * Cada metadado é uma sugestão independente — o colaborador corrige só o que quiser.
 * Painel de moderação no admin com filtros (pendentes, desatualizadas, aprovadas, rejeitadas).
 * Detecção de sugestões "desatualizadas": se o valor original mudar antes da revisão, a sugestão é sinalizada.

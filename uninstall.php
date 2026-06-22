@@ -18,6 +18,7 @@ $wpdb->query( "DROP TABLE IF EXISTS {$tmc_table}" );
 $tmc_options = array(
 	'tmc_db_version',
 	'tmc_enabled',
+	'tmc_autoinject',
 	'tmc_notify_email',
 	'tmc_notify_to',
 );

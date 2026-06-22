@@ -28,6 +28,7 @@ class Activator {
 
 		// Defaults sensatos para as opções do plugin.
 		add_option( 'tmc_enabled', 1 );
+		add_option( 'tmc_autoinject', 1 );
 		add_option( 'tmc_notify_email', 1 );
 		add_option( 'tmc_notify_to', get_option( 'admin_email' ) );
 	}

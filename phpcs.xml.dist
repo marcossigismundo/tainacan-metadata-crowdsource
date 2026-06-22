@@ -6,7 +6,15 @@
 	<rule ref="WordPress-Docs"/>
 	<rule ref="WordPress-Extra"/>
 	<rule ref="WordPress.Security"/>
-	<rule ref="PluginCheck"/>
+
+	<!--
+		O standard "PluginCheck" não é distribuído via Composer — ele faz parte
+		do plugin/CLI oficial Plugin Check (wordpress/plugin-check). Rode-o
+		separadamente como verificação autoritativa do WordPress.org:
+		    wp plugin check tainacan-metadata-crowdsource
+		(ou via Ferramentas → Plugin Check no admin). O ruleset abaixo cobre a
+		análise estática equivalente (Security, Extra, Docs, compatibilidade).
+	-->
 
 	<config name="testVersion" value="8.0-"/>
 	<rule ref="PHPCompatibilityWP"/>
