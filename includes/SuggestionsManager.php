@@ -93,6 +93,11 @@ class SuggestionsManager {
 
 		$current = $this->get_current_metadatum_value( $item_id, $metadatum_id );
 
+		// Segurança: bloqueia sugestão para metadado não-público (defesa contra request forjado).
+		if ( $metadatum_id > 0 && 'publish' !== ( $current['status'] ?? 'publish' ) ) {
+			return new \WP_Error( 'tmc_metadatum_not_public', __( 'Este metadado não está disponível para sugestões.', 'tainacan-metadata-crowdsource' ) );
+		}
+
 		$data = array(
 			'submission_id'        => isset( $context['submission_id'] ) ? substr( (string) $context['submission_id'], 0, 64 ) : null,
 			'item_id'              => $item_id,
@@ -372,6 +377,12 @@ class SuggestionsManager {
 						continue;
 					}
 
+						// Segurança: não oferecer metadados não-públicos (privado/rascunho) no
+						// formulário público, para não vazar valores restritos.
+					if ( method_exists( $metadatum, 'get_status' ) && 'publish' !== $metadatum->get_status() ) {
+						continue;
+					}
+
 					$value = $im->get_value();
 					// Representação canônica: multivalorado juntado por "||"
 					// (mesma usada no armazenamento e na aplicação).
@@ -432,8 +443,9 @@ class SuggestionsManager {
 				return $out;
 			}
 
-			$out['slug']  = $metadatum->get_slug();
-			$out['label'] = $metadatum->get_name();
+			$out['slug']   = $metadatum->get_slug();
+			$out['label']  = $metadatum->get_name();
+			$out['status'] = method_exists( $metadatum, 'get_status' ) ? $metadatum->get_status() : null;
 
 			$im_repo = \Tainacan\Repositories\Item_Metadata::get_instance();
 			$im      = new \Tainacan\Entities\Item_Metadata_Entity( $item, $metadatum );

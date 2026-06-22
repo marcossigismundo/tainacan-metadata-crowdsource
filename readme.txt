@@ -4,7 +4,7 @@ Tags: tainacan, crowdsourcing, metadata, museum, collections
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -48,6 +48,9 @@ Só quando um moderador aprova uma sugestão. A gravação usa as APIs oficiais 
 Sim. O formulário lê os metadados do item informado, independentemente da coleção.
 
 == Changelog ==
+
+= 1.2.1 =
+* Segurança: o formulário público deixa de oferecer metadados não-públicos (privado/rascunho), que poderiam vazar valores restritos; submissões para metadados não-públicos são rejeitadas no servidor mesmo via requisição forjada.
 
 = 1.2.0 =
 * Edição estilo enciclopédia colaborativa: o visitante edita o texto diretamente no campo (pré-preenchido com o valor atual); só os campos alterados são enviados. Multivalorados são editados um valor por linha, com botão de restaurar o original.
