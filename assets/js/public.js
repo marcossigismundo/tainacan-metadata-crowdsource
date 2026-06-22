@@ -16,13 +16,65 @@
 			return;
 		}
 
-		loadCaptcha(form);
+		var overlay = widget.querySelector('.tmc-modal-overlay');
+		if (overlay) {
+			setupModal(widget, form, overlay);
+		} else {
+			loadCaptcha(form);
+		}
 
 		form.addEventListener('submit', function (e) {
 			e.preventDefault();
 			submitAll(widget, form);
 		});
 	}
+
+	// ---- Modal -------------------------------------------------------------
+
+	function setupModal(widget, form, overlay) {
+		var openBtn = widget.querySelector('.tmc-open-modal');
+
+		function open() {
+			overlay.hidden = false;
+			document.body.classList.add('tmc-modal-open');
+			loadCaptcha(form);
+			var first = form.querySelector('.tmc-field-input');
+			if (first) {
+				first.focus();
+			}
+		}
+
+		function close() {
+			overlay.hidden = true;
+			document.body.classList.remove('tmc-modal-open');
+			if (openBtn) {
+				openBtn.focus();
+			}
+		}
+
+		if (openBtn) {
+			openBtn.addEventListener('click', open);
+		}
+
+		overlay.querySelectorAll('.tmc-modal-close').forEach(function (el) {
+			el.addEventListener('click', close);
+		});
+
+		// Clique fora do diálogo (no backdrop) fecha.
+		overlay.addEventListener('click', function (e) {
+			if (e.target === overlay) {
+				close();
+			}
+		});
+
+		document.addEventListener('keydown', function (e) {
+			if ((e.key === 'Escape' || e.key === 'Esc') && !overlay.hidden) {
+				close();
+			}
+		});
+	}
+
+	// ---- CAPTCHA -----------------------------------------------------------
 
 	// Busca um desafio fresco via REST — imune a page cache.
 	function loadCaptcha(form) {
@@ -48,6 +100,8 @@
 		var feedback = form.querySelector('.tmc-feedback');
 		showFeedback(feedback, t('captchaError', 'Não foi possível carregar a verificação. Recarregue a página.'), 'error');
 	}
+
+	// ---- Submit ------------------------------------------------------------
 
 	function submitAll(widget, form) {
 		var feedback = form.querySelector('.tmc-feedback');
@@ -107,10 +161,10 @@
 				if (res.ok) {
 					showFeedback(feedback, res.body.message || t('success', 'Sugestão(ões) enviada(s) com sucesso! Obrigado pela contribuição.'), 'success');
 					form.reset();
-					loadCaptcha(form); // Novo desafio para outra submissão.
+					loadCaptcha(form);
 				} else {
 					showFeedback(feedback, (res.body && res.body.error) || t('networkError', 'Erro de rede. Tente novamente.'), 'error');
-					loadCaptcha(form); // Token consumido; recarrega.
+					loadCaptcha(form);
 				}
 			})
 			.catch(function () {

@@ -170,7 +170,7 @@ class AutoInject {
 		}
 		$this->injected[ $item_id ] = true;
 
-		return do_shortcode( '[tmc_suggest_form item_id="' . $item_id . '" collapsible="1"]' );
+		return do_shortcode( '[tmc_suggest_form item_id="' . $item_id . '" modal="1"]' );
 	}
 
 	/**

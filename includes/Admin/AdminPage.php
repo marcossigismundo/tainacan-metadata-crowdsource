@@ -337,8 +337,8 @@ class AdminPage extends \Tainacan\Pages {
 					<tr>
 						<th><?php esc_html_e( 'Item', 'tainacan-metadata-crowdsource' ); ?></th>
 						<th><?php esc_html_e( 'Metadado', 'tainacan-metadata-crowdsource' ); ?></th>
-						<th><?php esc_html_e( 'Valor atual', 'tainacan-metadata-crowdsource' ); ?></th>
-						<th><?php esc_html_e( 'Valor sugerido', 'tainacan-metadata-crowdsource' ); ?></th>
+						<th><?php esc_html_e( 'Informação atual', 'tainacan-metadata-crowdsource' ); ?></th>
+						<th><?php esc_html_e( 'Informação sugerida', 'tainacan-metadata-crowdsource' ); ?></th>
 						<th><?php esc_html_e( 'Motivo', 'tainacan-metadata-crowdsource' ); ?></th>
 						<th><?php esc_html_e( 'Colaborador', 'tainacan-metadata-crowdsource' ); ?></th>
 						<th><?php esc_html_e( 'Data', 'tainacan-metadata-crowdsource' ); ?></th>

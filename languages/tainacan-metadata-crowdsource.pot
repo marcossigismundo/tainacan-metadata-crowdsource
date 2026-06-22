@@ -17,7 +17,7 @@ msgid "Tainacan Metadata Crowdsource"
 msgstr ""
 
 #: includes/Frontend/Shortcode.php
-msgid "Sugerir correção nos metadados"
+msgid "Sugerir melhoria nos metadados"
 msgstr ""
 
 #: includes/Frontend/Shortcode.php
@@ -33,7 +33,7 @@ msgid "Este item não possui metadados disponíveis para sugestão no momento."
 msgstr ""
 
 #: includes/Frontend/Shortcode.php
-msgid "Valor atual:"
+msgid "Informação atual:"
 msgstr ""
 
 #: includes/Frontend/Shortcode.php includes/Admin/AdminPage.php
@@ -41,7 +41,7 @@ msgid "(vazio)"
 msgstr ""
 
 #: includes/Frontend/Shortcode.php
-msgid "Sugerir novo valor…"
+msgid "Sugerir nova informação…"
 msgstr ""
 
 #: includes/Frontend/Shortcode.php
