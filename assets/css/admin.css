@@ -147,10 +147,14 @@
     overflow: hidden;
 }
 
-/* O container do Tainacan tem altura fixa, rolagem interna e padding-bottom 0;
-   garantimos rolagem e espaço no fim para o último card ser visível por inteiro. */
+/* O Tainacan dá ao container de conteúdo uma altura fixa (calc 100vh - …) com
+   rolagem interna própria — e essa rolagem aninhada não alcança o fim do nosso
+   conteúdo. Removemos a altura fixa para que o conteúdo cresça naturalmente e a
+   rolagem fique a cargo do container pai (#tainacan-page-container--inner, que
+   já rola a viewport). O subheader continua "sticky" no topo. */
 .tmc-wrap.tainacan-page-container-content {
-    overflow-y: auto;
+    height: auto;
+    max-height: none;
     padding-bottom: 4rem;
 }
 
