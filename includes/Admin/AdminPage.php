@@ -236,16 +236,18 @@ class AdminPage extends \Tainacan\Pages {
 				'restUrl' => esc_url_raw( rest_url( 'tmc/v1/' ) ),
 				'nonce'   => wp_create_nonce( 'wp_rest' ),
 				'i18n'    => array(
-					'rejectPrompt' => __( 'Motivo da rejeição (opcional):', 'tainacan-metadata-crowdsource' ),
-					'processing'   => __( 'Processando…', 'tainacan-metadata-crowdsource' ),
-					'approve'      => __( 'Aprovar', 'tainacan-metadata-crowdsource' ),
-					'reject'       => __( 'Rejeitar', 'tainacan-metadata-crowdsource' ),
-					'unknownError' => __( 'Erro desconhecido', 'tainacan-metadata-crowdsource' ),
-					'failPrefix'   => __( 'Falha:', 'tainacan-metadata-crowdsource' ),
-					'thankPrompt'  => __( 'Mensagem de agradecimento (deixe em branco para usar a mensagem padrão):', 'tainacan-metadata-crowdsource' ),
-					'thanking'     => __( 'Enviando…', 'tainacan-metadata-crowdsource' ),
-					'thanked'      => __( '✓ Agradecido', 'tainacan-metadata-crowdsource' ),
-					'thankSent'    => __( 'Agradecimento enviado!', 'tainacan-metadata-crowdsource' ),
+					'rejectPrompt'       => __( 'Motivo da rejeição (opcional):', 'tainacan-metadata-crowdsource' ),
+					'processing'         => __( 'Processando…', 'tainacan-metadata-crowdsource' ),
+					'approve'            => __( 'Aprovar', 'tainacan-metadata-crowdsource' ),
+					'reject'             => __( 'Rejeitar', 'tainacan-metadata-crowdsource' ),
+					'unknownError'       => __( 'Erro desconhecido', 'tainacan-metadata-crowdsource' ),
+					'failPrefix'         => __( 'Falha:', 'tainacan-metadata-crowdsource' ),
+					'thankPrompt'        => __( 'Mensagem de agradecimento (deixe em branco para usar a mensagem padrão):', 'tainacan-metadata-crowdsource' ),
+					'thanking'           => __( 'Enviando…', 'tainacan-metadata-crowdsource' ),
+					'thanked'            => __( '✓ Agradecido', 'tainacan-metadata-crowdsource' ),
+					'thankSent'          => __( 'Agradecimento enviado!', 'tainacan-metadata-crowdsource' ),
+					'deleteConfirm'      => __( 'Excluir esta sugestão? Esta ação não pode ser desfeita.', 'tainacan-metadata-crowdsource' ),
+					'deleteGroupConfirm' => __( 'Excluir TODAS as sugestões desta submissão? Esta ação não pode ser desfeita.', 'tainacan-metadata-crowdsource' ),
 				),
 			)
 		);
@@ -388,6 +390,9 @@ class AdminPage extends \Tainacan\Pages {
 							<?php elseif ( $can_thank ) : ?>
 								<button class="button tmc-thank"><?php esc_html_e( 'Enviar agradecimento', 'tainacan-metadata-crowdsource' ); ?></button>
 							<?php endif; ?>
+							<?php if ( ! empty( $first->submission_id ) ) : ?>
+							<button class="button-link tmc-delete-group"><?php esc_html_e( 'Excluir submissão', 'tainacan-metadata-crowdsource' ); ?></button>
+							<?php endif; ?>
 						</div>
 					</div>
 					<table class="wp-list-table widefat striped tmc-submission-table">
@@ -454,14 +459,14 @@ class AdminPage extends \Tainacan\Pages {
 										<?php if ( 'stale' === $s->status ) : ?>
 											<div><small><?php esc_html_e( 'O valor original mudou desde a sugestão.', 'tainacan-metadata-crowdsource' ); ?></small></div>
 										<?php endif; ?>
+										<?php $this->render_history( $s ); ?>
 									</td>
 									<td class="tmc-actions">
 										<?php if ( $is_pending ) : ?>
 											<button class="button button-primary tmc-approve"><?php esc_html_e( 'Aprovar', 'tainacan-metadata-crowdsource' ); ?></button>
 											<button class="button tmc-reject"><?php esc_html_e( 'Rejeitar', 'tainacan-metadata-crowdsource' ); ?></button>
-										<?php else : ?>
-											<em>—</em>
 										<?php endif; ?>
+										<button class="button-link tmc-delete"><?php esc_html_e( 'Excluir', 'tainacan-metadata-crowdsource' ); ?></button>
 									</td>
 								</tr>
 							<?php endforeach; ?>
@@ -473,6 +478,47 @@ class AdminPage extends \Tainacan\Pages {
 		endif;
 		?>
 		<?php
+	}
+
+	/**
+	 * Imprime o histórico de revisão de uma sugestão já avaliada.
+	 *
+	 * @param object $s Linha da sugestão.
+	 * @return void
+	 */
+	private function render_history( $s ) {
+		if ( in_array( $s->status, array( 'pending', 'stale' ), true ) ) {
+			return;
+		}
+
+		$reviewer = $s->reviewed_by ? get_userdata( (int) $s->reviewed_by ) : null;
+		$by       = $reviewer ? $reviewer->display_name : __( 'equipe', 'tainacan-metadata-crowdsource' );
+		$when     = $s->reviewed_at ? mysql2date( 'd/m/Y H:i', $s->reviewed_at ) : '';
+
+		if ( 'approved' === $s->status ) {
+			/* translators: 1: nome do revisor, 2: data e hora. */
+			$line = sprintf( __( 'Aprovada por %1$s em %2$s', 'tainacan-metadata-crowdsource' ), $by, $when );
+		} elseif ( 'rejected' === $s->status ) {
+			/* translators: 1: nome do revisor, 2: data e hora. */
+			$line = sprintf( __( 'Rejeitada por %1$s em %2$s', 'tainacan-metadata-crowdsource' ), $by, $when );
+		} else {
+			return;
+		}
+
+		echo '<div class="tmc-history"><small>' . esc_html( $line ) . '</small>';
+
+		if ( null !== $s->final_value && '' !== (string) $s->final_value ) {
+			$editor      = $s->edited_by ? get_userdata( (int) $s->edited_by ) : null;
+			$editor_name = $editor ? $editor->display_name : $by;
+			/* translators: %s: nome de quem editou o valor antes de aprovar. */
+			echo '<div><small>' . esc_html( sprintf( __( 'Valor editado por %s antes de aprovar.', 'tainacan-metadata-crowdsource' ), $editor_name ) ) . '</small></div>';
+		}
+
+		if ( $s->review_notes ) {
+			echo '<div><small>' . esc_html__( 'Notas:', 'tainacan-metadata-crowdsource' ) . ' ' . esc_html( $s->review_notes ) . '</small></div>';
+		}
+
+		echo '</div>';
 	}
 
 	/**

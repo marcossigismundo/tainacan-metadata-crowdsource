@@ -293,6 +293,40 @@ class SuggestionsManager {
 	}
 
 	/**
+	 * Exclui uma sugestão permanentemente.
+	 *
+	 * @param int $suggestion_id ID da sugestão.
+	 * @return bool
+	 */
+	public function delete( $suggestion_id ) {
+		$suggestion_id = (int) $suggestion_id;
+		if ( $suggestion_id <= 0 ) {
+			return false;
+		}
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin's own table; delete via $wpdb->delete (auto-prepared); caching irrelevant.
+		$deleted = $this->wpdb->delete( $this->table, array( 'id' => $suggestion_id ), array( '%d' ) );
+		if ( $deleted ) {
+			do_action( 'tmc_suggestion_deleted', $suggestion_id );
+		}
+		return (bool) $deleted;
+	}
+
+	/**
+	 * Exclui todas as sugestões de uma submissão.
+	 *
+	 * @param string $submission_id Identificador da submissão.
+	 * @return int Quantidade de linhas excluídas.
+	 */
+	public function delete_submission( $submission_id ) {
+		$submission_id = $this->sanitize_submission_id( $submission_id );
+		if ( '' === $submission_id ) {
+			return 0;
+		}
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin's own table; delete via $wpdb->delete (auto-prepared); caching irrelevant.
+		return (int) $this->wpdb->delete( $this->table, array( 'submission_id' => $submission_id ), array( '%s' ) );
+	}
+
+	/**
 	 * Marca como 'stale' sugestões pendentes cujo valor original mudou.
 	 *
 	 * @param int $item_id ID do item Tainacan.

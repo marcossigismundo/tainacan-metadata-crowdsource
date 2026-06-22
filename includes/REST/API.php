@@ -152,6 +152,33 @@ class API {
 				),
 			)
 		);
+
+		register_rest_route(
+			'tmc/v1',
+			'/suggestions/(?P<id>\d+)/delete',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'delete' ),
+				'permission_callback' => array( $this, 'admin_permission' ),
+				'args'                => array(
+					'id' => array(
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+						'validate_callback' => array( $this, 'validate_positive_int' ),
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			'tmc/v1',
+			'/submissions/(?P<submission_id>[a-fA-F0-9\-]{1,64})/delete',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'delete_submission' ),
+				'permission_callback' => array( $this, 'admin_permission' ),
+			)
+		);
 	}
 
 	/**
@@ -368,6 +395,39 @@ class API {
 			array(
 				'success' => true,
 				'sent'    => (int) $result,
+			),
+			200
+		);
+	}
+
+	/**
+	 * Exclui uma sugestão.
+	 *
+	 * @param \WP_REST_Request $request Requisição.
+	 * @return \WP_REST_Response
+	 */
+	public function delete( \WP_REST_Request $request ) {
+		$id      = (int) $request->get_param( 'id' );
+		$deleted = $this->manager->delete( $id );
+		if ( ! $deleted ) {
+			return new \WP_REST_Response( array( 'error' => __( 'Não foi possível excluir a sugestão.', 'tainacan-metadata-crowdsource' ) ), 400 );
+		}
+		return new \WP_REST_Response( array( 'success' => true ), 200 );
+	}
+
+	/**
+	 * Exclui todas as sugestões de uma submissão.
+	 *
+	 * @param \WP_REST_Request $request Requisição.
+	 * @return \WP_REST_Response
+	 */
+	public function delete_submission( \WP_REST_Request $request ) {
+		$submission_id = (string) $request->get_param( 'submission_id' );
+		$count         = $this->manager->delete_submission( $submission_id );
+		return new \WP_REST_Response(
+			array(
+				'success' => true,
+				'deleted' => (int) $count,
 			),
 			200
 		);

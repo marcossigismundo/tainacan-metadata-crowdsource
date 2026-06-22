@@ -279,3 +279,33 @@
     color: #2271b1;
     font-style: italic;
 }
+
+/* Histórico de revisão (sugestões já avaliadas). */
+.tmc-history {
+    margin-top: 5px;
+    color: #5e6c70;
+    line-height: 1.4;
+}
+
+/* Botões de exclusão (ação destrutiva). */
+.tmc-delete,
+.tmc-delete-group {
+    color: #b32d2e;
+    text-decoration: none;
+    padding: 0;
+}
+
+.tmc-delete:hover,
+.tmc-delete-group:hover {
+    color: #8a1f1f;
+    text-decoration: underline;
+}
+
+.tmc-actions .tmc-delete {
+    margin-left: 0.4em;
+}
+
+.tmc-submission-actions .tmc-delete-group {
+    margin-left: 0.9em;
+    font-size: 0.9em;
+}

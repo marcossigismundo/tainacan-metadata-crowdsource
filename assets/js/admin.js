@@ -28,6 +28,14 @@
 			handleAction($(this).closest('.tmc-row'), 'reject', notes);
 		});
 
+		$(document).on('click', '.tmc-delete', function () {
+			handleDelete($(this).closest('.tmc-row'));
+		});
+
+		$(document).on('click', '.tmc-delete-group', function () {
+			handleDeleteGroup($(this).closest('.tmc-submission'));
+		});
+
 		$(document).on('click', '.tmc-thank', function () {
 			handleThank($(this).closest('.tmc-submission'), $(this));
 		});
@@ -75,8 +83,58 @@
 			$row.find('.tmc-actions button')
 				.prop('disabled', false)
 				.each(function (i, btn) {
-					$(btn).text($(btn).hasClass('tmc-approve') ? t('approve', 'Aprovar') : t('reject', 'Rejeitar'));
+					var $btn = $(btn);
+					if ($btn.hasClass('tmc-approve')) {
+						$btn.text(t('approve', 'Aprovar'));
+					} else if ($btn.hasClass('tmc-reject')) {
+						$btn.text(t('reject', 'Rejeitar'));
+					}
 				});
+		});
+	}
+
+	function handleDelete($row) {
+		if (!window.confirm(t('deleteConfirm', 'Excluir esta sugestão? Esta ação não pode ser desfeita.'))) {
+			return;
+		}
+		var id = $row.data('suggestion-id');
+		var url = window.tmcAdmin.restUrl + 'suggestions/' + id + '/delete';
+		$row.find('button').prop('disabled', true);
+
+		$.ajax({
+			url: url,
+			method: 'POST',
+			headers: { 'X-WP-Nonce': window.tmcAdmin.nonce }
+		}).done(function () {
+			$row.fadeOut(200, function () { $(this).remove(); });
+		}).fail(function (xhr) {
+			var msg = (xhr.responseJSON && xhr.responseJSON.error) || t('unknownError', 'Erro desconhecido');
+			window.alert(t('failPrefix', 'Falha:') + ' ' + msg);
+			$row.find('button').prop('disabled', false);
+		});
+	}
+
+	function handleDeleteGroup($card) {
+		if (!window.confirm(t('deleteGroupConfirm', 'Excluir TODAS as sugestões desta submissão? Esta ação não pode ser desfeita.'))) {
+			return;
+		}
+		var sid = $card.data('submission-id');
+		if (!sid) {
+			return;
+		}
+		var url = window.tmcAdmin.restUrl + 'submissions/' + encodeURIComponent(sid) + '/delete';
+		$card.find('button').prop('disabled', true);
+
+		$.ajax({
+			url: url,
+			method: 'POST',
+			headers: { 'X-WP-Nonce': window.tmcAdmin.nonce }
+		}).done(function () {
+			$card.fadeOut(200, function () { $(this).remove(); });
+		}).fail(function (xhr) {
+			var msg = (xhr.responseJSON && xhr.responseJSON.error) || t('unknownError', 'Erro desconhecido');
+			window.alert(t('failPrefix', 'Falha:') + ' ' + msg);
+			$card.find('button').prop('disabled', false);
 		});
 	}
 
