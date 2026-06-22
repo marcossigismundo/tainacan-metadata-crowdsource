@@ -21,6 +21,7 @@ $tmc_options = array(
 	'tmc_autoinject',
 	'tmc_notify_email',
 	'tmc_notify_to',
+	'tmc_collection_config',
 );
 
 foreach ( $tmc_options as $tmc_option ) {

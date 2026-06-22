@@ -13,6 +13,7 @@
 namespace TMC\Admin;
 
 use TMC\SuggestionsManager;
+use TMC\Settings\CollectionConfig;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -200,6 +201,19 @@ class AdminPage extends \Tainacan\Pages {
 				'sanitize_callback' => 'sanitize_email',
 			)
 		);
+
+		// Grupo próprio: a aba "Coleções" tem um formulário por coleção, e cada
+		// um posta só a sua coleção. Isolar do grupo 'tmc_settings' evita que
+		// salvar uma coleção zere os checkboxes ausentes das outras opções.
+		register_setting(
+			'tmc_collection_settings',
+			CollectionConfig::OPTION,
+			array(
+				'type'              => 'array',
+				'sanitize_callback' => array( CollectionConfig::class, 'sanitize' ),
+				'default'           => array(),
+			)
+		);
 	}
 
 	/**
@@ -269,7 +283,7 @@ class AdminPage extends \Tainacan\Pages {
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin tab switch; no state mutation.
 		$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'suggestions';
-		$tab = in_array( $tab, array( 'suggestions', 'settings' ), true ) ? $tab : 'suggestions';
+		$tab = in_array( $tab, array( 'suggestions', 'collections', 'settings' ), true ) ? $tab : 'suggestions';
 
 		$counts   = $this->manager->count_by_status();
 		$base_url = '?page=' . $this->get_page_slug();
@@ -291,12 +305,15 @@ class AdminPage extends \Tainacan\Pages {
 						<span class="tmc-badge"><?php echo (int) $counts['pending']; ?></span>
 					<?php endif; ?>
 				</a>
+				<a href="<?php echo esc_url( $base_url . '&tab=collections' ); ?>" class="nav-tab <?php echo 'collections' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Coleções', 'tainacan-metadata-crowdsource' ); ?></a>
 				<a href="<?php echo esc_url( $base_url . '&tab=settings' ); ?>" class="nav-tab <?php echo 'settings' === $tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Configurações', 'tainacan-metadata-crowdsource' ); ?></a>
 			</h2>
 
 			<?php
 			if ( 'suggestions' === $tab ) {
 				$this->render_suggestions_tab( $counts, $base_url );
+			} elseif ( 'collections' === $tab ) {
+				$this->render_collections_tab();
 			} else {
 				$this->render_settings_tab();
 			}
@@ -519,6 +536,203 @@ class AdminPage extends \Tainacan\Pages {
 		}
 
 		echo '</div>';
+	}
+
+	/**
+	 * Renderiza a aba "Coleções": um formulário por coleção para escolher quais
+	 * metadados aceitam sugestões.
+	 *
+	 * @return void
+	 */
+	private function render_collections_tab() {
+		$collections = $this->fetch_collections();
+		?>
+		<div class="tmc-collections">
+			<p class="description">
+				<?php esc_html_e( 'Escolha quais metadados de cada coleção podem receber sugestões do público. Coleções ainda não configuradas aceitam sugestões em todos os metadados públicos (comportamento padrão).', 'tainacan-metadata-crowdsource' ); ?>
+			</p>
+			<p class="description">
+				<?php esc_html_e( 'Ao configurar uma coleção, apenas os metadados marcados serão oferecidos. Metadados adicionados à coleção depois precisarão ser habilitados aqui.', 'tainacan-metadata-crowdsource' ); ?>
+			</p>
+
+			<?php
+			if ( empty( $collections ) ) :
+				?>
+				<p class="tmc-empty"><?php esc_html_e( 'Nenhuma coleção encontrada.', 'tainacan-metadata-crowdsource' ); ?></p>
+				<?php
+			else :
+				foreach ( $collections as $collection ) {
+					$this->render_collection_card( $collection );
+				}
+			endif;
+			?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Renderiza o cartão (formulário próprio) de uma coleção.
+	 *
+	 * @param \Tainacan\Entities\Collection $collection Entidade da coleção.
+	 * @return void
+	 */
+	private function render_collection_card( $collection ) {
+		$cid = (int) $collection->get_id();
+
+		$metadata = $this->fetch_collection_metadata( $collection );
+		$config   = CollectionConfig::get( $cid );
+
+		$is_configured = ( null !== $config );
+		$enabled       = $is_configured ? ! empty( $config['enabled'] ) : true;
+		$desc_allowed  = $is_configured ? ! empty( $config['description'] ) : true;
+		// null => não configurada (allowlist implícita = todos marcados).
+		$allow = ( $is_configured && isset( $config['metadata'] ) && is_array( $config['metadata'] ) )
+			? array_map( 'intval', $config['metadata'] )
+			: null;
+
+		$total             = count( $metadata );
+		$selected          = 0;
+		$description_field = array(
+			'id'      => (string) SuggestionsManager::DESCRIPTION_ID,
+			'name'    => __( 'Descrição da imagem', 'tainacan-metadata-crowdsource' ),
+			'checked' => $desc_allowed,
+		);
+
+		// Pré-calcula o estado de cada metadado.
+		$rows = array();
+		foreach ( $metadata as $m ) {
+			$mid     = (int) $m->get_id();
+			$checked = ( null === $allow ) ? true : in_array( $mid, $allow, true );
+			if ( $checked ) {
+				++$selected;
+			}
+			$rows[] = array(
+				'id'      => $mid,
+				'name'    => $m->get_name(),
+				'checked' => $checked,
+			);
+		}
+
+		// Resumo no cabeçalho.
+		if ( ! $enabled ) {
+			$badge = __( 'Desativada', 'tainacan-metadata-crowdsource' );
+		} elseif ( ! $is_configured ) {
+			$badge = __( 'Padrão (todos)', 'tainacan-metadata-crowdsource' );
+		} else {
+			/* translators: 1: nº de metadados habilitados, 2: total de metadados da coleção. */
+			$badge = sprintf( __( '%1$d de %2$d campos', 'tainacan-metadata-crowdsource' ), $selected, $total );
+		}
+
+		$opt = CollectionConfig::OPTION;
+		?>
+		<form method="post" action="options.php" class="tmc-collection-form">
+			<?php settings_fields( 'tmc_collection_settings' ); ?>
+			<input type="hidden" name="<?php echo esc_attr( $opt ); ?>[__collections__][]" value="<?php echo esc_attr( $cid ); ?>">
+
+			<details class="tmc-collection">
+				<summary class="tmc-collection-summary">
+					<span class="tmc-collection-name"><?php echo esc_html( $collection->get_name() ); ?></span>
+					<span class="tmc-collection-badge tmc-badge-<?php echo $enabled ? ( $is_configured ? 'custom' : 'default' ) : 'off'; ?>"><?php echo esc_html( $badge ); ?></span>
+				</summary>
+
+				<div class="tmc-collection-body">
+					<p class="tmc-col-enable">
+						<label>
+							<input type="checkbox" name="<?php echo esc_attr( $opt ); ?>[<?php echo esc_attr( $cid ); ?>][enabled]" value="1" <?php checked( $enabled ); ?>>
+							<strong><?php esc_html_e( 'Aceitar sugestões nesta coleção', 'tainacan-metadata-crowdsource' ); ?></strong>
+						</label>
+					</p>
+
+					<div class="tmc-col-toolbar">
+						<button type="button" class="button-link tmc-select-all"><?php esc_html_e( 'Selecionar todos', 'tainacan-metadata-crowdsource' ); ?></button>
+						<span aria-hidden="true">·</span>
+						<button type="button" class="button-link tmc-select-none"><?php esc_html_e( 'Nenhum', 'tainacan-metadata-crowdsource' ); ?></button>
+					</div>
+
+					<ul class="tmc-metadata-list">
+						<li>
+							<label>
+								<input type="checkbox" class="tmc-md-check" name="<?php echo esc_attr( $opt ); ?>[<?php echo esc_attr( $cid ); ?>][description]" value="1" <?php checked( $description_field['checked'] ); ?>>
+								<?php echo esc_html( $description_field['name'] ); ?>
+								<small class="tmc-md-hint"><?php esc_html_e( '(descrição do documento da imagem)', 'tainacan-metadata-crowdsource' ); ?></small>
+							</label>
+						</li>
+						<?php if ( empty( $rows ) ) : ?>
+							<li class="tmc-md-empty"><?php esc_html_e( 'Esta coleção não possui metadados públicos.', 'tainacan-metadata-crowdsource' ); ?></li>
+						<?php else : ?>
+							<?php foreach ( $rows as $row ) : ?>
+								<li>
+									<label>
+										<input type="checkbox" class="tmc-md-check" name="<?php echo esc_attr( $opt ); ?>[<?php echo esc_attr( $cid ); ?>][metadata][]" value="<?php echo esc_attr( $row['id'] ); ?>" <?php checked( $row['checked'] ); ?>>
+										<?php echo esc_html( $row['name'] ); ?>
+									</label>
+								</li>
+							<?php endforeach; ?>
+						<?php endif; ?>
+					</ul>
+
+					<?php submit_button( __( 'Salvar coleção', 'tainacan-metadata-crowdsource' ), 'primary', 'submit', false ); ?>
+				</div>
+			</details>
+		</form>
+		<?php
+	}
+
+	/**
+	 * Busca as coleções Tainacan visíveis ao gestor.
+	 *
+	 * @return array Lista de \Tainacan\Entities\Collection (vazia em falha).
+	 */
+	private function fetch_collections() {
+		if ( ! class_exists( '\Tainacan\Repositories\Collections' ) ) {
+			return array();
+		}
+		try {
+			$repo        = \Tainacan\Repositories\Collections::get_instance();
+			$collections = $repo->fetch(
+				array(
+					'posts_per_page' => -1,
+					'orderby'        => 'title',
+					'order'          => 'ASC',
+				),
+				'OBJECT'
+			);
+			return is_array( $collections ) ? $collections : array();
+		} catch ( \Throwable $e ) {
+			return array();
+		}
+	}
+
+	/**
+	 * Busca os metadados públicos de uma coleção (mesmo critério do formulário público).
+	 *
+	 * @param \Tainacan\Entities\Collection $collection Entidade da coleção.
+	 * @return array Lista de \Tainacan\Entities\Metadatum.
+	 */
+	private function fetch_collection_metadata( $collection ) {
+		if ( ! class_exists( '\Tainacan\Repositories\Metadata' ) ) {
+			return array();
+		}
+		try {
+			$repo     = \Tainacan\Repositories\Metadata::get_instance();
+			$metadata = $repo->fetch_by_collection( $collection, array() );
+			if ( ! is_array( $metadata ) ) {
+				return array();
+			}
+			// Só metadados públicos: são os únicos que o formulário público oferece.
+			return array_values(
+				array_filter(
+					$metadata,
+					static function ( $m ) {
+						return is_object( $m )
+							&& method_exists( $m, 'get_status' )
+							&& 'publish' === $m->get_status();
+					}
+				)
+			);
+		} catch ( \Throwable $e ) {
+			return array();
+		}
 	}
 
 	/**

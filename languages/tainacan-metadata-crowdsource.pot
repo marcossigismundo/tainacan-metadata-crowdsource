@@ -2,13 +2,13 @@
 # This file is distributed under the GPL-3.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Tainacan Metadata Crowdsource 1.0.0\n"
+"Project-Id-Version: Tainacan Metadata Crowdsource 1.4.0\n"
 "Report-Msgid-Bugs-To: https://github.com/marcossigismundo/tainacan-metadata-crowdsource/issues\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-06-15T00:00:00+00:00\n"
+"POT-Creation-Date: 2026-06-22T00:00:00+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Domain: tainacan-metadata-crowdsource\n"
 
@@ -17,11 +17,11 @@ msgid "Tainacan Metadata Crowdsource"
 msgstr ""
 
 #: includes/Frontend/Shortcode.php
-msgid "Sugerir melhoria nos metadados"
+msgid "As sugestões estão desabilitadas no momento."
 msgstr ""
 
 #: includes/Frontend/Shortcode.php
-msgid "As sugestões estão desabilitadas no momento."
+msgid "Sugerir melhoria nos metadados"
 msgstr ""
 
 #: includes/Frontend/Shortcode.php
@@ -33,15 +33,44 @@ msgid "Este item não possui metadados disponíveis para sugestão no momento."
 msgstr ""
 
 #: includes/Frontend/Shortcode.php
-msgid "Informação atual:"
-msgstr ""
-
-#: includes/Frontend/Shortcode.php includes/Admin/AdminPage.php
-msgid "(vazio)"
+msgid "Altere ao menos um campo para enviar uma sugestão."
 msgstr ""
 
 #: includes/Frontend/Shortcode.php
-msgid "Sugerir nova informação…"
+msgid "Responda a verificação anti-spam antes de enviar."
+msgstr ""
+
+#: includes/Frontend/Shortcode.php
+#: includes/Admin/AdminPage.php
+msgid "Enviando…"
+msgstr ""
+
+#: includes/Frontend/Shortcode.php
+msgid "Sugestão(ões) enviada(s) com sucesso! Obrigado pela contribuição."
+msgstr ""
+
+#: includes/Frontend/Shortcode.php
+msgid "Erro de rede. Tente novamente."
+msgstr ""
+
+#: includes/Frontend/Shortcode.php
+msgid "Não foi possível carregar a verificação. Recarregue a página."
+msgstr ""
+
+#: includes/Frontend/Shortcode.php
+msgid "Fechar"
+msgstr ""
+
+#: includes/Frontend/Shortcode.php
+msgid "Edite diretamente os campos abaixo para melhorar as informações deste item, como em uma enciclopédia colaborativa. Só os campos que você alterar serão enviados, e sua contribuição passa por revisão da equipe antes de ser aplicada."
+msgstr ""
+
+#: includes/Frontend/Shortcode.php
+msgid "um valor por linha"
+msgstr ""
+
+#: includes/Frontend/Shortcode.php
+msgid "Restaurar valor original"
 msgstr ""
 
 #: includes/Frontend/Shortcode.php
@@ -53,7 +82,15 @@ msgid "Seu e-mail (opcional)"
 msgstr ""
 
 #: includes/Frontend/Shortcode.php
-msgid "Motivo da correção (opcional)"
+msgid "Motivo (opcional)"
+msgstr ""
+
+#: includes/Frontend/Shortcode.php
+msgid "Ex.: o documento original indica outra data"
+msgstr ""
+
+#: includes/Frontend/Shortcode.php
+msgid "Deixe este campo em branco"
 msgstr ""
 
 #. translators: %s: expressão aritmética (ex.: "3 + 5") injetada pelo JS.
@@ -65,16 +102,185 @@ msgstr ""
 msgid "Enviar sugestões"
 msgstr ""
 
+#: includes/SuggestionsManager.php
+msgid "Item e metadado são obrigatórios."
+msgstr ""
+
+#: includes/SuggestionsManager.php
+msgid "O novo valor não pode ser vazio."
+msgstr ""
+
+#: includes/SuggestionsManager.php
+msgid "O valor sugerido é muito longo."
+msgstr ""
+
+#: includes/SuggestionsManager.php
+msgid "Item não encontrado ou indisponível para sugestões."
+msgstr ""
+
+#: includes/SuggestionsManager.php
+msgid "Este metadado não está disponível para sugestões."
+msgstr ""
+
+#: includes/SuggestionsManager.php
+msgid "Este campo não está disponível para sugestões nesta coleção."
+msgstr ""
+
+#: includes/SuggestionsManager.php
+msgid "Erro ao registrar sugestão."
+msgstr ""
+
+#: includes/SuggestionsManager.php
+msgid "Sugestão não encontrada."
+msgstr ""
+
+#: includes/SuggestionsManager.php
+msgid "Sugestão já aprovada."
+msgstr ""
+
+#: includes/SuggestionsManager.php
+msgid "O valor final é muito longo."
+msgstr ""
+
+#: includes/SuggestionsManager.php
+#: includes/Admin/AdminPage.php
+msgid "Descrição da imagem"
+msgstr ""
+
+#: includes/SuggestionsManager.php
+msgid "Tainacan não está disponível."
+msgstr ""
+
+#: includes/SuggestionsManager.php
+msgid "Item Tainacan não encontrado."
+msgstr ""
+
+#: includes/SuggestionsManager.php
+msgid "Metadado não encontrado."
+msgstr ""
+
+#. translators: %s: lista de erros de validação retornada pelo Tainacan.
+#: includes/SuggestionsManager.php
+msgid "Valor inválido: %s"
+msgstr ""
+
+#: includes/SuggestionsManager.php
+msgid "Submissão não encontrada."
+msgstr ""
+
+#: includes/SuggestionsManager.php
+msgid "O colaborador não informou e-mail."
+msgstr ""
+
+#. translators: %s: nome do site.
+#: includes/SuggestionsManager.php
+msgid "Obrigado pela sua contribuição — %s"
+msgstr ""
+
+#: includes/SuggestionsManager.php
+msgid "Não foi possível enviar o e-mail de agradecimento."
+msgstr ""
+
+#: includes/SuggestionsManager.php
+msgid "Olá! Agradecemos de coração a sua colaboração com o acervo. Suas sugestões foram avaliadas pela nossa equipe. Contribuições como a sua ajudam a preservar e qualificar a memória deste acervo. Muito obrigado!"
+msgstr ""
+
+#. translators: %s: título do item Tainacan.
+#: includes/SuggestionsManager.php
+msgid "[Tainacan Crowdsource] Nova sugestão — %s"
+msgstr ""
+
+#: includes/SuggestionsManager.php
+#: includes/Admin/AdminPage.php
+msgid "(vazio)"
+msgstr ""
+
+#: includes/SuggestionsManager.php
+msgid "(não informado)"
+msgstr ""
+
+#: includes/SuggestionsManager.php
+#: includes/Admin/AdminPage.php
+msgid "anônimo"
+msgstr ""
+
+#: includes/SuggestionsManager.php
+msgid "Nova sugestão de metadado recebida."
+msgstr ""
+
+#. translators: 1: título do item, 2: ID do item.
+#: includes/SuggestionsManager.php
+msgid "Item: %1$s (ID %2$d)"
+msgstr ""
+
+#. translators: %s: rótulo ou ID do metadado.
+#: includes/SuggestionsManager.php
+msgid "Metadado: %s"
+msgstr ""
+
+#. translators: %s: valor atual do metadado.
+#: includes/SuggestionsManager.php
+msgid "Valor atual: %s"
+msgstr ""
+
+#. translators: %s: novo valor sugerido.
+#: includes/SuggestionsManager.php
+msgid "Valor sugerido: %s"
+msgstr ""
+
+#. translators: %s: motivo informado pelo colaborador.
+#: includes/SuggestionsManager.php
+msgid "Motivo: %s"
+msgstr ""
+
+#. translators: %s: nome do colaborador.
+#: includes/SuggestionsManager.php
+msgid "Colaborador: %s"
+msgstr ""
+
+#. translators: %s: URL do painel de revisão.
+#: includes/SuggestionsManager.php
+msgid "Revisar: %s"
+msgstr ""
+
+#: includes/REST/API.php
+msgid "Aguarde alguns segundos antes de enviar outra sugestão."
+msgstr ""
+
+#: includes/REST/API.php
+msgid "Você atingiu o limite de envios por hora. Tente novamente mais tarde."
+msgstr ""
+
+#: includes/REST/API.php
+msgid "Falha na verificação anti-spam. Recarregue a página e tente novamente."
+msgstr ""
+
+#: includes/REST/API.php
+msgid "Nenhuma sugestão foi enviada."
+msgstr ""
+
+#: includes/REST/API.php
+msgid "Não foi possível registrar as sugestões."
+msgstr ""
+
+#: includes/REST/API.php
+msgid "Sugestão(ões) recebida(s)! Serão revisadas pela equipe antes de aplicadas."
+msgstr ""
+
+#: includes/REST/API.php
+msgid "Não foi possível excluir a sugestão."
+msgstr ""
+
 #: includes/Admin/AdminPage.php
 msgid "Crowdsource"
 msgstr ""
 
 #: includes/Admin/AdminPage.php
-msgid "Sugestões"
+msgid "Motivo da rejeição (opcional):"
 msgstr ""
 
 #: includes/Admin/AdminPage.php
-msgid "Configurações"
+msgid "Processando…"
 msgstr ""
 
 #: includes/Admin/AdminPage.php
@@ -83,6 +289,267 @@ msgstr ""
 
 #: includes/Admin/AdminPage.php
 msgid "Rejeitar"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Erro desconhecido"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Falha:"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Mensagem de agradecimento (deixe em branco para usar a mensagem padrão):"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "✓ Agradecido"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Agradecimento enviado!"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Excluir esta sugestão? Esta ação não pode ser desfeita."
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Excluir TODAS as sugestões desta submissão? Esta ação não pode ser desfeita."
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Você não tem permissão para gerenciar as sugestões."
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Crowdsource de metadados"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Sugestões recebidas do público para revisão pela equipe."
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Sugestões"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Coleções"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Configurações"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Pendentes"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Desatualizadas"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Aprovadas"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Rejeitadas"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Todas"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Nenhuma sugestão neste filtro."
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Ver item"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Agradecido"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Enviar agradecimento"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Excluir submissão"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Metadado"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Informação atual"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Informação sugerida"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Motivo"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Status"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Ações"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Atual"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Sugerida"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "ver diferenças"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "(editado pelo gestor)"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "O valor original mudou desde a sugestão."
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Excluir"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "equipe"
+msgstr ""
+
+#. translators: 1: nome do revisor, 2: data e hora.
+#: includes/Admin/AdminPage.php
+msgid "Aprovada por %1$s em %2$s"
+msgstr ""
+
+#. translators: 1: nome do revisor, 2: data e hora.
+#: includes/Admin/AdminPage.php
+msgid "Rejeitada por %1$s em %2$s"
+msgstr ""
+
+#. translators: %s: nome de quem editou o valor antes de aprovar.
+#: includes/Admin/AdminPage.php
+msgid "Valor editado por %s antes de aprovar."
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Notas:"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Escolha quais metadados de cada coleção podem receber sugestões do público. Coleções ainda não configuradas aceitam sugestões em todos os metadados públicos (comportamento padrão)."
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Ao configurar uma coleção, apenas os metadados marcados serão oferecidos. Metadados adicionados à coleção depois precisarão ser habilitados aqui."
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Nenhuma coleção encontrada."
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Desativada"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Padrão (todos)"
+msgstr ""
+
+#. translators: 1: nº de metadados habilitados, 2: total de metadados da coleção.
+#: includes/Admin/AdminPage.php
+msgid "%1$d de %2$d campos"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Aceitar sugestões nesta coleção"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Selecionar todos"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Nenhum"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "(descrição do documento da imagem)"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Esta coleção não possui metadados públicos."
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Salvar coleção"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Habilitar sugestões"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Aceitar novas sugestões do público"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Exibir nas páginas de item"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Inserir automaticamente um formulário recolhível ao final de cada página de item Tainacan"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Desative para usar apenas o shortcode manual."
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Notificar por e-mail"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Enviar e-mail ao moderador quando uma nova sugestão chegar"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "E-mail do moderador"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "A verificação anti-spam é local (pergunta aritmética + honeypot), sem dependência de serviços externos."
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Como usar"
+msgstr ""
+
+#: includes/Admin/AdminPage.php
+msgid "Insira o shortcode abaixo em qualquer página ou template para exibir o formulário de sugestões de um item:"
+msgstr ""
+
+#. translators: %s: exemplo de ID de item.
+#: includes/Admin/AdminPage.php
+msgid "Substitua %s pelo ID do item Tainacan."
 msgstr ""
 
 #: includes/Admin/AdminPage.php
@@ -101,18 +568,7 @@ msgstr ""
 msgid "Desatualizada"
 msgstr ""
 
-#: includes/SuggestionsManager.php
-msgid "O novo valor não pode ser vazio."
+#: includes/Core/Plugin.php
+msgid "Tainacan Metadata Crowdsource requer o plugin Tainacan ativo para integrar com o menu administrativo."
 msgstr ""
 
-#: includes/SuggestionsManager.php
-msgid "Item não encontrado."
-msgstr ""
-
-#: includes/REST/API.php
-msgid "Falha na verificação anti-spam. Recarregue a página e tente novamente."
-msgstr ""
-
-#: includes/REST/API.php
-msgid "Sugestão(ões) recebida(s)! Serão revisadas pela equipe antes de aplicadas."
-msgstr ""

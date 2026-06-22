@@ -45,6 +45,17 @@
 			var $diff = $(this).nextAll('.tmc-diff').first();
 			$diff.prop('hidden', !$diff.prop('hidden'));
 		});
+
+		// Aba "Coleções": selecionar todos / nenhum dos metadados da coleção.
+		$(document).on('click', '.tmc-select-all', function (e) {
+			e.preventDefault();
+			$(this).closest('.tmc-collection-body').find('.tmc-md-check').prop('checked', true);
+		});
+
+		$(document).on('click', '.tmc-select-none', function (e) {
+			e.preventDefault();
+			$(this).closest('.tmc-collection-body').find('.tmc-md-check').prop('checked', false);
+		});
 	});
 
 	function handleAction($row, action, notes) {

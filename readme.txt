@@ -4,7 +4,7 @@ Tags: tainacan, crowdsourcing, metadata, museum, collections
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -23,6 +23,7 @@ Principais recursos:
 * Detecção de sugestões "desatualizadas": se o valor original mudar antes da revisão, a sugestão é sinalizada.
 * Anti-spam 100% local: verificação aritmética + honeypot + time-trap + rate-limit por IP. Sem dependência de serviços externos ou CDN.
 * Notificação por e-mail ao moderador a cada nova sugestão.
+* Controle por coleção: escolha quais metadados de cada coleção podem receber sugestões (allowlist), com opção de desativar o crowdsourcing em coleções específicas.
 
 Não depende de nenhum outro plugin além do próprio Tainacan.
 
@@ -31,7 +32,8 @@ Não depende de nenhum outro plugin além do próprio Tainacan.
 1. Faça upload da pasta `tainacan-metadata-crowdsource` para `/wp-content/plugins/`.
 2. Ative o plugin em **Plugins → Instalados**.
 3. Acesse **Crowdsource → Configurações** para definir o e-mail do moderador.
-4. Insira `[tmc_suggest_form item_id="123"]` na página de um item (substitua `123` pelo ID).
+4. (Opcional) Em **Crowdsource → Coleções**, escolha quais metadados de cada coleção aceitam sugestões.
+5. Insira `[tmc_suggest_form item_id="123"]` na página de um item (substitua `123` pelo ID), ou deixe a exibição automática ligada.
 
 == Frequently Asked Questions ==
 
@@ -45,9 +47,18 @@ Só quando um moderador aprova uma sugestão. A gravação usa as APIs oficiais 
 
 = Funciona com itens de qualquer coleção? =
 
-Sim. O formulário lê os metadados do item informado, independentemente da coleção.
+Sim. Por padrão o formulário lê todos os metadados públicos do item. Em **Crowdsource → Coleções** você pode, para cada coleção, escolher exatamente quais metadados aceitam sugestões — ou desativar o crowdsourcing naquela coleção.
+
+= Coleções já existentes mudam de comportamento ao atualizar? =
+
+Não. Enquanto uma coleção não for configurada na aba "Coleções", ela continua aceitando sugestões em todos os metadados públicos, como antes. A allowlist só passa a valer depois que você salva a configuração daquela coleção.
 
 == Changelog ==
+
+= 1.4.0 =
+* Controle por coleção: nova aba "Coleções" no painel permite escolher quais metadados de cada coleção podem receber sugestões (allowlist), além do campo "Descrição da imagem", e desativar o crowdsourcing em coleções específicas. Cada coleção tem seu próprio formulário (salvar uma não afeta as demais) e atalhos "Selecionar todos / Nenhum".
+* Compatibilidade: coleções ainda não configuradas mantêm o comportamento anterior (todos os metadados públicos liberados); a allowlist só vale após salvar a coleção.
+* Segurança: submissões para um metadado não habilitado na coleção são rejeitadas no servidor, mesmo via requisição forjada.
 
 = 1.3.0 =
 * Exclusão de sugestões: botão "Excluir" por sugestão e "Excluir submissão" (apaga todas as sugestões de um envio), com confirmação.

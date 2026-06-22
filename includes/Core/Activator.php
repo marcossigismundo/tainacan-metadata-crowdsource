@@ -8,6 +8,7 @@
 namespace TMC\Core;
 
 use TMC\Database\Tables;
+use TMC\Settings\CollectionConfig;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -31,5 +32,9 @@ class Activator {
 		add_option( 'tmc_autoinject', 1 );
 		add_option( 'tmc_notify_email', 1 );
 		add_option( 'tmc_notify_to', get_option( 'admin_email' ) );
+
+		// Mapa de allowlist por coleção: pode crescer (coleções × metadados),
+		// então fica sem autoload para não pesar em toda requisição.
+		add_option( CollectionConfig::OPTION, array(), '', 'no' );
 	}
 }

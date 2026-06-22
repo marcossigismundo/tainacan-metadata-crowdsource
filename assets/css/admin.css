@@ -309,3 +309,116 @@
     margin-left: 0.9em;
     font-size: 0.9em;
 }
+
+/* Aba "Coleções": allowlist de metadados por coleção. */
+.tmc-collections > .description {
+    max-width: 760px;
+}
+
+.tmc-collection-form {
+    margin: 0 0 0.75rem;
+}
+
+.tmc-collection {
+    border: 1px solid #e0e6e9;
+    border-radius: 6px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.tmc-collection-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.7rem 1rem;
+    cursor: pointer;
+    list-style: none;
+    background: #f0f4f6;
+    border-radius: 6px;
+}
+
+.tmc-collection[open] .tmc-collection-summary {
+    border-bottom: 1px solid #e0e6e9;
+    border-radius: 6px 6px 0 0;
+}
+
+.tmc-collection-summary::-webkit-details-marker {
+    display: none;
+}
+
+.tmc-collection-summary::before {
+    content: "\25B6";
+    margin-right: 0.4rem;
+    font-size: 0.7em;
+    color: #5e6c70;
+}
+
+.tmc-collection[open] .tmc-collection-summary::before {
+    content: "\25BC";
+}
+
+.tmc-collection-name {
+    font-weight: 600;
+    color: #1d2327;
+    flex: 1;
+}
+
+.tmc-collection-badge {
+    font-size: 0.78em;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 10px;
+    white-space: nowrap;
+}
+
+.tmc-badge-default { background: #eef1f2; color: #5e6c70; }
+.tmc-badge-custom  { background: #ddeef1; color: #1d6573; }
+.tmc-badge-off     { background: #eee;    color: #888; }
+
+.tmc-collection-body {
+    padding: 0.9rem 1.1rem 1.1rem;
+}
+
+.tmc-col-enable {
+    margin: 0 0 0.6rem;
+}
+
+.tmc-col-toolbar {
+    margin-bottom: 0.5rem;
+    font-size: 0.9em;
+    color: #5e6c70;
+}
+
+.tmc-col-toolbar .button-link {
+    color: #298596;
+    text-decoration: none;
+}
+
+.tmc-col-toolbar .button-link:hover {
+    text-decoration: underline;
+}
+
+.tmc-metadata-list {
+    margin: 0 0 1rem;
+    columns: 2;
+    column-gap: 2rem;
+}
+
+@media (max-width: 782px) {
+    .tmc-metadata-list { columns: 1; }
+}
+
+.tmc-metadata-list li {
+    margin: 0 0 0.35rem;
+    break-inside: avoid;
+}
+
+.tmc-md-hint {
+    color: #8a8a8a;
+}
+
+.tmc-md-empty {
+    color: #8a8a8a;
+    font-style: italic;
+}

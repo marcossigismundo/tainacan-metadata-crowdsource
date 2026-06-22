@@ -7,6 +7,8 @@
 
 namespace TMC;
 
+use TMC\Settings\CollectionConfig;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -96,6 +98,13 @@ class SuggestionsManager {
 		// Segurança: bloqueia sugestão para metadado não-público (defesa contra request forjado).
 		if ( $metadatum_id > 0 && 'publish' !== ( $current['status'] ?? 'publish' ) ) {
 			return new \WP_Error( 'tmc_metadatum_not_public', __( 'Este metadado não está disponível para sugestões.', 'tainacan-metadata-crowdsource' ) );
+		}
+
+		// Segurança: respeita a allowlist por coleção. Defende contra um request
+		// forjado para um campo que o gestor não habilitou nesta coleção. Coleção
+		// não configurada libera tudo (default retrocompatível).
+		if ( ! CollectionConfig::is_metadatum_allowed( (int) ( $current['collection_id'] ?? 0 ), $metadatum_id ) ) {
+			return new \WP_Error( 'tmc_metadatum_not_allowed', __( 'Este campo não está disponível para sugestões nesta coleção.', 'tainacan-metadata-crowdsource' ) );
 		}
 
 		$data = array(
@@ -388,11 +397,19 @@ class SuggestionsManager {
 				return array();
 			}
 
+			// Allowlist por coleção: se o gestor desligou o crowdsourcing nesta
+			// coleção, não há campos a oferecer.
+			$collection_id = (int) $item->get_collection_id();
+			if ( ! CollectionConfig::is_collection_enabled( $collection_id ) ) {
+				return array();
+			}
+
 			$out = array();
 
 			// Campo especial: descrição da imagem (post_content do item), só quando
-			// o item tem um documento (imagem/arquivo) ao qual a descrição se refere.
-			if ( $this->item_has_document( $item ) ) {
+			// o item tem um documento (imagem/arquivo) ao qual a descrição se refere
+			// e a coleção permite sugestões nesse campo.
+			if ( $this->item_has_document( $item ) && CollectionConfig::is_description_allowed( $collection_id ) ) {
 				$post  = get_post( $item_id );
 				$out[] = array(
 					'metadatum_id' => self::DESCRIPTION_ID,
@@ -414,6 +431,11 @@ class SuggestionsManager {
 						// Segurança: não oferecer metadados não-públicos (privado/rascunho) no
 						// formulário público, para não vazar valores restritos.
 					if ( method_exists( $metadatum, 'get_status' ) && 'publish' !== $metadatum->get_status() ) {
+						continue;
+					}
+
+						// Allowlist por coleção: oferece só os metadados habilitados pelo gestor.
+					if ( ! CollectionConfig::is_metadatum_allowed( $collection_id, $metadatum->get_id() ) ) {
 						continue;
 					}
 

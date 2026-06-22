@@ -100,6 +100,12 @@ class Shortcode {
 
 		$metadata = $this->manager->get_item_metadata_for_form( $item_id );
 		if ( empty( $metadata ) ) {
+			// Na auto-injeção (modal) não renderiza nada — não faz sentido mostrar
+			// um aviso de "sem campos" em toda página de item de uma coleção sem
+			// metadados habilitados. No uso manual (inline) avisa o autor da página.
+			if ( $modal ) {
+				return '';
+			}
 			return '<div class="tmc-empty">' . esc_html__( 'Este item não possui metadados disponíveis para sugestão no momento.', 'tainacan-metadata-crowdsource' ) . '</div>';
 		}
 
