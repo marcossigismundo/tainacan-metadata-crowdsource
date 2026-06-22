@@ -140,8 +140,23 @@
     font-style: italic;
 }
 
+/* A linha de filtros (.subsubsub) é float:left no WP; sem isto o primeiro
+   card sobe e fica ao lado dela, fora de alinhamento. */
+.tmc-wrap .subsubsub {
+    float: none;
+    overflow: hidden;
+}
+
+/* O container do Tainacan tem altura fixa, rolagem interna e padding-bottom 0;
+   garantimos rolagem e espaço no fim para o último card ser visível por inteiro. */
+.tmc-wrap.tainacan-page-container-content {
+    overflow-y: auto;
+    padding-bottom: 4rem;
+}
+
 /* Cards de submissão (sugestões agrupadas por envio). */
 .tmc-submission {
+    clear: both;
     margin: 0 0 1.25rem;
     border: 1px solid #e0e6e9;
     border-radius: 6px;
@@ -182,6 +197,33 @@
     margin: 0 !important;
     border: 0 !important;
     box-shadow: none !important;
+    table-layout: fixed;
+    width: 100%;
+}
+
+.tmc-submission-table th,
+.tmc-submission-table td {
+    vertical-align: top;
+    white-space: normal;
+    word-break: break-word;
+}
+
+/* Larguras proporcionais: Metadado | Atual | Sugerida | Motivo | Status | Ações */
+.tmc-submission-table th:nth-child(1),
+.tmc-submission-table td:nth-child(1) { width: 13%; }
+.tmc-submission-table th:nth-child(2),
+.tmc-submission-table td:nth-child(2) { width: 26%; }
+.tmc-submission-table th:nth-child(3),
+.tmc-submission-table td:nth-child(3) { width: 26%; }
+.tmc-submission-table th:nth-child(4),
+.tmc-submission-table td:nth-child(4) { width: 14%; }
+.tmc-submission-table th:nth-child(5),
+.tmc-submission-table td:nth-child(5) { width: 9%; }
+.tmc-submission-table th:nth-child(6),
+.tmc-submission-table td:nth-child(6) { width: 12%; }
+
+.tmc-submission-table .tmc-actions button {
+    margin: 0 4px 4px 0;
 }
 
 .tmc-submission-actions .tmc-thank {
