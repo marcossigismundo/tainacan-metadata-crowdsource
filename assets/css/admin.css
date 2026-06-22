@@ -237,3 +237,41 @@
     font-size: 0.9em;
     white-space: nowrap;
 }
+
+/* Valor sugerido editável pelo gestor + diff (estilo wiki). */
+.tmc-edit-value {
+    width: 100%;
+    min-height: 3.2em;
+    font-size: 0.9em;
+    font-family: inherit;
+    box-sizing: border-box;
+    background: #fff8e1;
+    border: 1px solid #e0c97a;
+    border-radius: 3px;
+}
+
+.tmc-diff-toggle {
+    display: inline-block;
+    margin-top: 4px;
+    font-size: 0.85em;
+    text-decoration: none;
+}
+
+.tmc-diff {
+    margin-top: 6px;
+}
+
+.tmc-diff table.diff {
+    width: 100%;
+    font-size: 0.85em;
+    table-layout: fixed;
+}
+
+.tmc-diff table.diff td {
+    word-break: break-word;
+}
+
+.tmc-edited {
+    color: #2271b1;
+    font-style: italic;
+}

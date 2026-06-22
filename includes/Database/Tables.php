@@ -48,6 +48,8 @@ class Tables {
 			reviewed_by bigint(20) UNSIGNED DEFAULT NULL,
 			reviewed_at datetime DEFAULT NULL,
 			review_notes text DEFAULT NULL,
+			final_value longtext DEFAULT NULL,
+			edited_by bigint(20) UNSIGNED DEFAULT NULL,
 			thanked_at datetime DEFAULT NULL,
 			created_at datetime DEFAULT CURRENT_TIMESTAMP,
 			updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

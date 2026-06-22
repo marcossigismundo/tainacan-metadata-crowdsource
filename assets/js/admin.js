@@ -6,6 +6,18 @@
 		return i18n[key] || fallback;
 	}
 
+	// Serializa o valor editável (multivalorado => juntado por "||").
+	function serializeValue(el) {
+		if (el.getAttribute('data-multiple') === '1') {
+			return el.value
+				.split(/\r?\n/)
+				.map(function (s) { return s.trim(); })
+				.filter(function (s) { return s.length > 0; })
+				.join('||');
+		}
+		return el.value.trim();
+	}
+
 	$(document).ready(function () {
 		$(document).on('click', '.tmc-approve', function () {
 			handleAction($(this).closest('.tmc-row'), 'approve');
@@ -19,11 +31,34 @@
 		$(document).on('click', '.tmc-thank', function () {
 			handleThank($(this).closest('.tmc-submission'), $(this));
 		});
+
+		$(document).on('click', '.tmc-diff-toggle', function (e) {
+			e.preventDefault();
+			var $diff = $(this).nextAll('.tmc-diff').first();
+			$diff.prop('hidden', !$diff.prop('hidden'));
+		});
 	});
 
 	function handleAction($row, action, notes) {
 		var id = $row.data('suggestion-id');
 		var url = window.tmcAdmin.restUrl + 'suggestions/' + id + '/' + action;
+
+		var data = {};
+		if (notes) {
+			data.notes = notes;
+		}
+
+		// Ao aprovar, envia o valor curado pelo gestor só se ele de fato editou.
+		if (action === 'approve') {
+			var ta = $row.find('.tmc-edit-value').get(0);
+			if (ta) {
+				var serialized = serializeValue(ta);
+				var original = ta.getAttribute('data-original') || '';
+				if (serialized !== original) {
+					data.final_value = serialized;
+				}
+			}
+		}
 
 		$row.find('.tmc-actions button').prop('disabled', true).text(t('processing', 'Processando…'));
 
@@ -31,7 +66,7 @@
 			url: url,
 			method: 'POST',
 			headers: { 'X-WP-Nonce': window.tmcAdmin.nonce },
-			data: notes ? { notes: notes } : {}
+			data: data
 		}).done(function () {
 			$row.fadeOut(200, function () { $(this).remove(); });
 		}).fail(function (xhr) {

@@ -106,10 +106,15 @@ class API {
 				'callback'            => array( $this, 'approve' ),
 				'permission_callback' => array( $this, 'admin_permission' ),
 				'args'                => array(
-					'id' => array(
+					'id'          => array(
 						'required'          => true,
 						'sanitize_callback' => 'absint',
 						'validate_callback' => array( $this, 'validate_positive_int' ),
+					),
+					'final_value' => array( 'type' => 'string' ),
+					'notes'       => array(
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_textarea_field',
 					),
 				),
 			)
@@ -320,9 +325,10 @@ class API {
 	 * @return \WP_REST_Response
 	 */
 	public function approve( \WP_REST_Request $request ) {
-		$id     = (int) $request->get_param( 'id' );
-		$notes  = sanitize_textarea_field( (string) $request->get_param( 'notes' ) );
-		$result = $this->manager->approve( $id, get_current_user_id(), $notes );
+		$id          = (int) $request->get_param( 'id' );
+		$notes       = sanitize_textarea_field( (string) $request->get_param( 'notes' ) );
+		$final_value = wp_kses_post( (string) $request->get_param( 'final_value' ) );
+		$result      = $this->manager->approve( $id, get_current_user_id(), $notes, $final_value );
 		if ( is_wp_error( $result ) ) {
 			return new \WP_REST_Response( array( 'error' => $result->get_error_message() ), 400 );
 		}

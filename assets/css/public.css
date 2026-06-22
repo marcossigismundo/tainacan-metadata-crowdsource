@@ -31,9 +31,34 @@
 
 .tmc-field-head {
     display: flex;
-    flex-direction: column;
-    gap: 0.2em;
-    margin-bottom: 0.5em;
+    align-items: baseline;
+    gap: 0.5em;
+    margin-bottom: 0.4em;
+}
+
+.tmc-field-label {
+    flex: 1;
+}
+
+.tmc-field-hint {
+    font-size: 0.8em;
+    color: #888;
+    font-style: italic;
+}
+
+.tmc-field-reset {
+    flex: 0 0 auto;
+    border: none;
+    background: transparent;
+    color: #2271b1;
+    cursor: pointer;
+    font-size: 1.05em;
+    line-height: 1;
+    padding: 0 0.2em;
+}
+
+.tmc-field-reset:hover {
+    color: #135e96;
 }
 
 .tmc-field-label {

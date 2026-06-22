@@ -23,10 +23,37 @@
 			loadCaptcha(form);
 		}
 
+		// Restaurar o valor original de um campo (edição estilo wiki).
+		widget.addEventListener('click', function (e) {
+			var btn = e.target.closest ? e.target.closest('.tmc-field-reset') : null;
+			if (!btn) {
+				return;
+			}
+			var field = btn.closest('.tmc-field');
+			var ta = field && field.querySelector('.tmc-field-input');
+			if (!ta) {
+				return;
+			}
+			var original = ta.getAttribute('data-original') || '';
+			ta.value = ta.getAttribute('data-multiple') === '1' ? original.split('||').join('\n') : original;
+		});
+
 		form.addEventListener('submit', function (e) {
 			e.preventDefault();
 			submitAll(widget, form);
 		});
+	}
+
+	// Serializa um campo na forma canônica (multivalorado => juntado por "||").
+	function serializeField(el) {
+		if (el.getAttribute('data-multiple') === '1') {
+			return el.value
+				.split(/\r?\n/)
+				.map(function (s) { return s.trim(); })
+				.filter(function (s) { return s.length > 0; })
+				.join('||');
+		}
+		return el.value.trim();
 	}
 
 	// ---- Modal -------------------------------------------------------------
@@ -60,7 +87,6 @@
 			el.addEventListener('click', close);
 		});
 
-		// Clique fora do diálogo (no backdrop) fecha.
 		overlay.addEventListener('click', function (e) {
 			if (e.target === overlay) {
 				close();
@@ -76,7 +102,6 @@
 
 	// ---- CAPTCHA -----------------------------------------------------------
 
-	// Busca um desafio fresco via REST — imune a page cache.
 	function loadCaptcha(form) {
 		var questionEl = form.querySelector('.tmc-captcha-question');
 		var tokenEl = form.querySelector('.tmc-captcha-token');
@@ -108,17 +133,21 @@
 		var submitBtn = form.querySelector('.tmc-submit');
 		var itemId = parseInt(widget.getAttribute('data-item-id'), 10);
 
+		// Só os campos alterados em relação ao valor original (e não vazios).
 		var suggestions = Array.from(form.querySelectorAll('.tmc-field-input'))
 			.map(function (el) {
+				var value = serializeField(el);
 				return {
 					metadatum_id: parseInt(el.getAttribute('data-metadatum-id'), 10),
-					new_value: el.value.trim()
+					new_value: value,
+					changed: value.length > 0 && value !== (el.getAttribute('data-original') || '')
 				};
 			})
-			.filter(function (f) { return f.new_value.length > 0; });
+			.filter(function (f) { return f.changed; })
+			.map(function (f) { return { metadatum_id: f.metadatum_id, new_value: f.new_value }; });
 
 		if (suggestions.length === 0) {
-			showFeedback(feedback, t('fillOne', 'Preencha pelo menos um campo para sugerir.'), 'error');
+			showFeedback(feedback, t('fillOne', 'Altere ao menos um campo para enviar uma sugestão.'), 'error');
 			return;
 		}
 

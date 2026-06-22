@@ -113,7 +113,7 @@ class Shortcode {
 				'captchaUrl' => esc_url_raw( rest_url( 'tmc/v1/captcha' ) ),
 				'nonce'      => wp_create_nonce( 'wp_rest' ),
 				'i18n'       => array(
-					'fillOne'       => __( 'Preencha pelo menos um campo para sugerir.', 'tainacan-metadata-crowdsource' ),
+					'fillOne'       => __( 'Altere ao menos um campo para enviar uma sugestão.', 'tainacan-metadata-crowdsource' ),
 					'answerCaptcha' => __( 'Responda a verificação anti-spam antes de enviar.', 'tainacan-metadata-crowdsource' ),
 					'sending'       => __( 'Enviando…', 'tainacan-metadata-crowdsource' ),
 					'success'       => __( 'Sugestão(ões) enviada(s) com sucesso! Obrigado pela contribuição.', 'tainacan-metadata-crowdsource' ),
@@ -123,10 +123,7 @@ class Shortcode {
 			)
 		);
 
-		$current_label = __( 'Informação atual:', 'tainacan-metadata-crowdsource' );
-		$empty_label   = __( '(vazio)', 'tainacan-metadata-crowdsource' );
-		$suggest_ph    = __( 'Sugerir nova informação…', 'tainacan-metadata-crowdsource' );
-		$title_id      = 'tmc-modal-title-' . $item_id;
+		$title_id = 'tmc-modal-title-' . $item_id;
 
 		ob_start();
 		?>
@@ -145,23 +142,31 @@ class Shortcode {
 			<h3 class="tmc-title"><?php echo esc_html( $atts['title'] ); ?></h3>
 		<?php endif; ?>
 					<p class="tmc-intro">
-						<?php esc_html_e( 'Identificou uma informação incorreta ou incompleta? Sugira uma melhoria. Cada campo é uma sugestão separada — preencha apenas os que deseja aprimorar. Sua contribuição será revisada pela equipe antes de ser aplicada.', 'tainacan-metadata-crowdsource' ); ?>
+						<?php esc_html_e( 'Edite diretamente os campos abaixo para melhorar as informações deste item, como em uma enciclopédia colaborativa. Só os campos que você alterar serão enviados, e sua contribuição passa por revisão da equipe antes de ser aplicada.', 'tainacan-metadata-crowdsource' ); ?>
 					</p>
 
 					<form class="tmc-form" novalidate>
 						<div class="tmc-fields<?php echo $modal ? ' tmc-fields-grid' : ''; ?>">
-							<?php foreach ( $metadata as $md ) : ?>
-								<?php $current_value = '' !== (string) $md['current'] ? $md['current'] : $empty_label; ?>
+							<?php
+							foreach ( $metadata as $md ) :
+								$is_multiple = ! empty( $md['is_multiple'] );
+								$canonical   = (string) $md['current'];
+								$prefill     = $is_multiple ? str_replace( '||', "\n", $canonical ) : $canonical;
+								?>
 								<div class="tmc-field">
 									<div class="tmc-field-head">
 										<strong class="tmc-field-label"><?php echo esc_html( $md['label'] ); ?></strong>
-										<span class="tmc-field-current"><?php echo esc_html( $current_label ); ?> <em><?php echo esc_html( $current_value ); ?></em></span>
+										<?php if ( $is_multiple ) : ?>
+											<span class="tmc-field-hint"><?php esc_html_e( 'um valor por linha', 'tainacan-metadata-crowdsource' ); ?></span>
+										<?php endif; ?>
+										<button type="button" class="tmc-field-reset" aria-label="<?php esc_attr_e( 'Restaurar valor original', 'tainacan-metadata-crowdsource' ); ?>" title="<?php esc_attr_e( 'Restaurar valor original', 'tainacan-metadata-crowdsource' ); ?>">↺</button>
 									</div>
 									<textarea
 										class="tmc-field-input"
 										data-metadatum-id="<?php echo esc_attr( $md['metadatum_id'] ); ?>"
-										placeholder="<?php echo esc_attr( $suggest_ph ); ?>"
-										rows="2"></textarea>
+										data-multiple="<?php echo $is_multiple ? '1' : '0'; ?>"
+										data-original="<?php echo esc_attr( $canonical ); ?>"
+										rows="3"><?php echo esc_textarea( $prefill ); ?></textarea>
 								</div>
 							<?php endforeach; ?>
 						</div>

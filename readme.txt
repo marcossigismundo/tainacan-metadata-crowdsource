@@ -4,7 +4,7 @@ Tags: tainacan, crowdsourcing, metadata, museum, collections
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.1.1
+Stable tag: 1.2.0
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -48,6 +48,11 @@ Só quando um moderador aprova uma sugestão. A gravação usa as APIs oficiais 
 Sim. O formulário lê os metadados do item informado, independentemente da coleção.
 
 == Changelog ==
+
+= 1.2.0 =
+* Edição estilo enciclopédia colaborativa: o visitante edita o texto diretamente no campo (pré-preenchido com o valor atual); só os campos alterados são enviados. Multivalorados são editados um valor por linha, com botão de restaurar o original.
+* Curadoria do gestor: na moderação, o valor sugerido é editável e o gestor pode complementar antes de aprovar; o valor curado é aplicado e auditado (colunas final_value, edited_by).
+* Diferenças destacadas (atual × sugerida) na moderação, via wp_text_diff do WordPress.
 
 = 1.1.1 =
 * Correção de layout na página de moderação: o primeiro card deixava de alinhar (a linha de filtros era flutuante) e o fim da lista ficava cortado dentro do container do Tainacan.

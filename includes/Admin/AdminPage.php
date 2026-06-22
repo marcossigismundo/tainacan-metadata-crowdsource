@@ -404,14 +404,50 @@ class AdminPage extends \Tainacan\Pages {
 						<tbody>
 							<?php
 							foreach ( $rows as $s ) :
-								$metadatum = $s->metadatum_label ? $s->metadatum_label : '#' . $s->metadatum_id;
-								$old_value = '' !== (string) $s->old_value ? $s->old_value : __( '(vazio)', 'tainacan-metadata-crowdsource' );
-								$reason    = $s->reason ? $s->reason : '—';
+								$metadatum  = $s->metadatum_label ? $s->metadatum_label : '#' . $s->metadatum_id;
+								$reason     = $s->reason ? $s->reason : '—';
+								$is_pending = in_array( $s->status, array( 'pending', 'stale' ), true );
+								// Heurística de multivalorado: presença do separador "||".
+								$is_multiple = ( false !== strpos( (string) $s->old_value, '||' ) ) || ( false !== strpos( (string) $s->new_value, '||' ) );
+								$new_display = $is_multiple ? str_replace( '||', "\n", (string) $s->new_value ) : (string) $s->new_value;
+								$old_display = $is_multiple ? str_replace( '||', "\n", (string) $s->old_value ) : (string) $s->old_value;
+								$old_compact = '' !== (string) $s->old_value
+									? ( $is_multiple ? implode( ', ', explode( '||', (string) $s->old_value ) ) : (string) $s->old_value )
+									: __( '(vazio)', 'tainacan-metadata-crowdsource' );
+								$diff_html   = ( $is_pending && function_exists( 'wp_text_diff' ) )
+									? wp_text_diff(
+										$old_display,
+										$new_display,
+										array(
+											'title_left'  => __( 'Atual', 'tainacan-metadata-crowdsource' ),
+											'title_right' => __( 'Sugerida', 'tainacan-metadata-crowdsource' ),
+										)
+									)
+									: '';
 								?>
 								<tr data-suggestion-id="<?php echo (int) $s->id; ?>" class="tmc-row tmc-row-<?php echo esc_attr( $s->status ); ?>">
 									<td><?php echo esc_html( $metadatum ); ?></td>
-									<td class="tmc-val tmc-val-old"><?php echo esc_html( $old_value ); ?></td>
-									<td class="tmc-val tmc-val-new"><?php echo esc_html( $s->new_value ); ?></td>
+									<td class="tmc-val tmc-val-old"><?php echo esc_html( $old_compact ); ?></td>
+									<td class="tmc-val tmc-val-new">
+										<?php if ( $is_pending ) : ?>
+											<textarea class="tmc-edit-value" data-multiple="<?php echo $is_multiple ? '1' : '0'; ?>" data-original="<?php echo esc_attr( (string) $s->new_value ); ?>" rows="3"><?php echo esc_textarea( $new_display ); ?></textarea>
+											<?php if ( $diff_html ) : ?>
+												<a href="#" class="tmc-diff-toggle"><?php esc_html_e( 'ver diferenças', 'tainacan-metadata-crowdsource' ); ?></a>
+												<div class="tmc-diff" hidden>
+													<?php echo $diff_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_text_diff() retorna HTML de diff gerado e escapado internamente pelo core do WordPress. ?>
+												</div>
+											<?php endif; ?>
+										<?php else : ?>
+											<?php
+											$applied         = ( null !== $s->final_value && '' !== (string) $s->final_value ) ? (string) $s->final_value : (string) $s->new_value;
+											$applied_display = $is_multiple ? implode( ', ', explode( '||', $applied ) ) : $applied;
+											echo esc_html( $applied_display );
+											if ( null !== $s->final_value && '' !== (string) $s->final_value ) {
+												echo ' <small class="tmc-edited">' . esc_html__( '(editado pelo gestor)', 'tainacan-metadata-crowdsource' ) . '</small>';
+											}
+											?>
+										<?php endif; ?>
+									</td>
 									<td><?php echo esc_html( $reason ); ?></td>
 									<td>
 										<span class="tmc-status tmc-status-<?php echo esc_attr( $s->status ); ?>"><?php echo esc_html( $this->status_label( $s->status ) ); ?></span>
@@ -420,7 +456,7 @@ class AdminPage extends \Tainacan\Pages {
 										<?php endif; ?>
 									</td>
 									<td class="tmc-actions">
-										<?php if ( in_array( $s->status, array( 'pending', 'stale' ), true ) ) : ?>
+										<?php if ( $is_pending ) : ?>
 											<button class="button button-primary tmc-approve"><?php esc_html_e( 'Aprovar', 'tainacan-metadata-crowdsource' ); ?></button>
 											<button class="button tmc-reject"><?php esc_html_e( 'Rejeitar', 'tainacan-metadata-crowdsource' ); ?></button>
 										<?php else : ?>

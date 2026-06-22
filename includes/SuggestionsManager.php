@@ -211,16 +211,27 @@ class SuggestionsManager {
 	 *
 	 * @param int         $suggestion_id    ID da sugestão.
 	 * @param int|null    $reviewer_user_id ID do revisor.
-	 * @param string|null $notes         Notas de revisão.
+	 * @param string|null $notes            Notas de revisão.
+	 * @param string|null $final_value      Valor curado pelo gestor (se editou antes de aprovar).
 	 * @return true|\WP_Error
 	 */
-	public function approve( $suggestion_id, $reviewer_user_id = null, $notes = null ) {
+	public function approve( $suggestion_id, $reviewer_user_id = null, $notes = null, $final_value = null ) {
 		$suggestion = $this->get( $suggestion_id );
 		if ( ! $suggestion ) {
 			return new \WP_Error( 'tmc_not_found', __( 'Sugestão não encontrada.', 'tainacan-metadata-crowdsource' ) );
 		}
 		if ( self::STATUS_APPROVED === $suggestion->status ) {
 			return new \WP_Error( 'tmc_already_approved', __( 'Sugestão já aprovada.', 'tainacan-metadata-crowdsource' ) );
+		}
+
+		// Curadoria do gestor: havendo final_value, é ele que será aplicado e auditado.
+		$has_edit = ( null !== $final_value && '' !== trim( (string) $final_value ) );
+		if ( $has_edit ) {
+			$final_value = (string) $final_value;
+			if ( mb_strlen( $final_value ) > self::MAX_VALUE_LENGTH ) {
+				return new \WP_Error( 'tmc_value_too_long', __( 'O valor final é muito longo.', 'tainacan-metadata-crowdsource' ) );
+			}
+			$suggestion->new_value = $final_value;
 		}
 
 		$result = $this->apply_to_tainacan( $suggestion );
@@ -236,6 +247,8 @@ class SuggestionsManager {
 				'reviewed_by'  => $reviewer_user_id ? (int) $reviewer_user_id : null,
 				'reviewed_at'  => current_time( 'mysql' ),
 				'review_notes' => $notes ? substr( (string) $notes, 0, 2000 ) : null,
+				'final_value'  => $has_edit ? $final_value : null,
+				'edited_by'    => ( $has_edit && $reviewer_user_id ) ? (int) $reviewer_user_id : null,
 			),
 			array( 'id' => (int) $suggestion_id )
 		);
@@ -359,9 +372,11 @@ class SuggestionsManager {
 						continue;
 					}
 
-					$value      = $im->get_value();
+					$value = $im->get_value();
+					// Representação canônica: multivalorado juntado por "||"
+					// (mesma usada no armazenamento e na aplicação).
 					$value_text = is_array( $value )
-						? implode( ', ', array_map( 'strval', $value ) )
+						? implode( '||', array_map( 'strval', $value ) )
 						: (string) $value;
 
 					$out[] = array(
