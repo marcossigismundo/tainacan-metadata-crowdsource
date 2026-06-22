@@ -29,6 +29,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 class API {
 
 	/**
+	 * Limite de submissões por IP por hora (anti-flood).
+	 */
+	const MAX_PER_HOUR = 20;
+
+	/**
 	 * Gerenciador de sugestões.
 	 *
 	 * @var SuggestionsManager
@@ -126,6 +131,22 @@ class API {
 				),
 			)
 		);
+
+		register_rest_route(
+			'tmc/v1',
+			'/submissions/(?P<submission_id>[a-fA-F0-9\-]{1,64})/thank',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'thank' ),
+				'permission_callback' => array( $this, 'admin_permission' ),
+				'args'                => array(
+					'message' => array(
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_textarea_field',
+					),
+				),
+			)
+		);
 	}
 
 	/**
@@ -187,6 +208,16 @@ class API {
 			);
 		}
 
+		// Limite por hora por IP (anti-flood).
+		$hour_key   = 'tmc_hcount_' . md5( $ip );
+		$hour_count = (int) get_transient( $hour_key );
+		if ( $hour_count >= self::MAX_PER_HOUR ) {
+			return new \WP_REST_Response(
+				array( 'error' => __( 'Você atingiu o limite de envios por hora. Tente novamente mais tarde.', 'tainacan-metadata-crowdsource' ) ),
+				429
+			);
+		}
+
 		if ( ! Captcha::verify(
 			(string) $request->get_param( 'captcha_token' ),
 			$request->get_param( 'captcha_answer' ),
@@ -208,11 +239,12 @@ class API {
 		}
 
 		$context = array(
-			'name'       => sanitize_text_field( (string) $request->get_param( 'submitter_name' ) ),
-			'email'      => sanitize_email( (string) $request->get_param( 'submitter_email' ) ),
-			'reason'     => sanitize_textarea_field( (string) $request->get_param( 'reason' ) ),
-			'ip'         => $ip,
-			'user_agent' => $this->get_user_agent(),
+			'submission_id' => wp_generate_uuid4(),
+			'name'          => sanitize_text_field( (string) $request->get_param( 'submitter_name' ) ),
+			'email'         => sanitize_email( (string) $request->get_param( 'submitter_email' ) ),
+			'reason'        => sanitize_textarea_field( (string) $request->get_param( 'reason' ) ),
+			'ip'            => $ip,
+			'user_agent'    => $this->get_user_agent(),
 		);
 
 		$created = 0;
@@ -242,6 +274,7 @@ class API {
 		}
 
 		set_transient( $rate_key, 1, 15 );
+		set_transient( $hour_key, $hour_count + 1, HOUR_IN_SECONDS );
 
 		return new \WP_REST_Response(
 			array(
@@ -310,6 +343,28 @@ class API {
 			return new \WP_REST_Response( array( 'error' => $result->get_error_message() ), 400 );
 		}
 		return new \WP_REST_Response( array( 'success' => true ), 200 );
+	}
+
+	/**
+	 * Envia o agradecimento aos colaboradores de uma submissão.
+	 *
+	 * @param \WP_REST_Request $request Requisição.
+	 * @return \WP_REST_Response
+	 */
+	public function thank( \WP_REST_Request $request ) {
+		$submission_id = (string) $request->get_param( 'submission_id' );
+		$message       = sanitize_textarea_field( (string) $request->get_param( 'message' ) );
+		$result        = $this->manager->thank_submission( $submission_id, $message );
+		if ( is_wp_error( $result ) ) {
+			return new \WP_REST_Response( array( 'error' => $result->get_error_message() ), 400 );
+		}
+		return new \WP_REST_Response(
+			array(
+				'success' => true,
+				'sent'    => (int) $result,
+			),
+			200
+		);
 	}
 
 	/**

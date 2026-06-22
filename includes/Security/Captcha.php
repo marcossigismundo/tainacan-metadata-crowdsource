@@ -12,51 +12,41 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * CAPTCHA local — sem dependência de terceiros nem script externo (zero CDN).
+ * CAPTCHA local e stateless — sem dependência de terceiros, script externo
+ * ou escrita no banco (importante: o desafio é gerado num endpoint público).
  *
  * Três camadas combinadas:
- *  1. Pergunta aritmética simples: token + resposta esperada guardados em
- *     transient, de uso único (consumido na verificação).
- *  2. Honeypot: campo oculto que humanos não preenchem; se vier preenchido,
- *     é bot.
- *  3. Time-trap: submissão em menos de MIN_SECONDS é tratada como bot.
- *
- * O desafio é entregue via REST (GET /captcha) e não embutido no HTML, para
- * ser imune a cache de página (page cache serviria o mesmo token a todos).
+ *  1. Pergunta aritmética simples. O token carrega os operandos e o timestamp
+ *     assinados por HMAC (wp_salt), então o servidor confia neles sem guardar
+ *     estado. Sem transient = sem vetor de DoS por inflar wp_options.
+ *  2. Honeypot: campo oculto que humanos não preenchem.
+ *  3. Time-trap: submissão fora da janela [MIN_SECONDS, TTL] é tratada como bot.
  */
 class Captcha {
 
-	const TRANSIENT_PREFIX = 'tmc_cap_';
-	const TTL              = 600; // Segundos de validade do desafio (10 min).
-	const MIN_SECONDS      = 3;   // Tempo mínimo plausível de preenchimento humano.
+	const MIN_SECONDS = 3;   // Tempo mínimo plausível de preenchimento humano.
+	const TTL         = 600; // Validade do desafio (10 min).
 
 	/**
 	 * Gera um novo desafio.
 	 *
-	 * @return array{token:string,question:string} Token e expressão (ex.: "3 + 5").
+	 * @return array{token:string,question:string} Token assinado e expressão (ex.: "3 + 5").
 	 */
 	public static function generate() {
-		$a     = wp_rand( 1, 9 );
-		$b     = wp_rand( 1, 9 );
-		$token = wp_generate_password( 24, false, false );
+		$a       = wp_rand( 1, 9 );
+		$b       = wp_rand( 1, 9 );
+		$created = time();
+		$payload = $a . '|' . $b . '|' . $created;
 
-		set_transient(
-			self::TRANSIENT_PREFIX . $token,
-			array(
-				'answer'  => $a + $b,
-				'created' => time(),
-			),
-			self::TTL
-		);
-
+		// Token = "a|b|created|hmac" — só dígitos, "|" e hex (seguro em JSON).
 		return array(
-			'token'    => $token,
+			'token'    => $payload . '|' . self::sign( $payload ),
 			'question' => $a . ' + ' . $b,
 		);
 	}
 
 	/**
-	 * Verifica a resposta. Consome o token (uso único).
+	 * Verifica a resposta contra o token assinado.
 	 *
 	 * @param string $token    Token devolvido por generate().
 	 * @param mixed  $answer   Resposta numérica informada pelo usuário.
@@ -69,24 +59,35 @@ class Captcha {
 			return false;
 		}
 
-		$token = preg_replace( '/[^A-Za-z0-9]/', '', (string) $token );
-		if ( '' === $token ) {
+		$parts = explode( '|', (string) $token );
+		if ( 4 !== count( $parts ) ) {
 			return false;
 		}
 
-		$key    = self::TRANSIENT_PREFIX . $token;
-		$stored = get_transient( $key );
-		delete_transient( $key ); // Uso único, mesmo em caso de falha.
+		list( $a, $b, $created, $sig ) = $parts;
+		$payload                       = $a . '|' . $b . '|' . $created;
 
-		if ( ! is_array( $stored ) || ! isset( $stored['answer'], $stored['created'] ) ) {
+		// Assinatura inválida => token forjado/adulterado.
+		if ( ! hash_equals( self::sign( $payload ), (string) $sig ) ) {
 			return false;
 		}
 
-		// Time-trap: rápido demais para ser humano.
-		if ( ( time() - (int) $stored['created'] ) < self::MIN_SECONDS ) {
+		// Time-trap: rápido demais (bot) ou expirado.
+		$elapsed = time() - (int) $created;
+		if ( $elapsed < self::MIN_SECONDS || $elapsed > self::TTL ) {
 			return false;
 		}
 
-		return is_numeric( $answer ) && (int) $answer === (int) $stored['answer'];
+		return is_numeric( $answer ) && ( (int) $a + (int) $b ) === (int) $answer;
+	}
+
+	/**
+	 * Assina um payload com o segredo do site (wp_salt).
+	 *
+	 * @param string $payload Operandos e timestamp.
+	 * @return string
+	 */
+	private static function sign( $payload ) {
+		return hash_hmac( 'sha256', $payload, wp_salt( 'nonce' ) );
 	}
 }

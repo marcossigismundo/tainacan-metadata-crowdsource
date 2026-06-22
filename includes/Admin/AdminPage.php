@@ -242,6 +242,10 @@ class AdminPage extends \Tainacan\Pages {
 					'reject'       => __( 'Rejeitar', 'tainacan-metadata-crowdsource' ),
 					'unknownError' => __( 'Erro desconhecido', 'tainacan-metadata-crowdsource' ),
 					'failPrefix'   => __( 'Falha:', 'tainacan-metadata-crowdsource' ),
+					'thankPrompt'  => __( 'Mensagem de agradecimento (deixe em branco para usar a mensagem padrão):', 'tainacan-metadata-crowdsource' ),
+					'thanking'     => __( 'Enviando…', 'tainacan-metadata-crowdsource' ),
+					'thanked'      => __( '✓ Agradecido', 'tainacan-metadata-crowdsource' ),
+					'thankSent'    => __( 'Agradecimento enviado!', 'tainacan-metadata-crowdsource' ),
 				),
 			)
 		);
@@ -254,6 +258,13 @@ class AdminPage extends \Tainacan\Pages {
 	 * @return void
 	 */
 	public function render_page_content() {
+		// O menu usa cap 'read' (padrão Tainacan), mas a moderação expõe dados
+		// pessoais dos colaboradores (e-mail). Exigimos manage_options para ver.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			echo '<div class="notice notice-error"><p>' . esc_html__( 'Você não tem permissão para gerenciar as sugestões.', 'tainacan-metadata-crowdsource' ) . '</p></div>';
+			return;
+		}
+
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin tab switch; no state mutation.
 		$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'suggestions';
 		$tab = in_array( $tab, array( 'suggestions', 'settings' ), true ) ? $tab : 'suggestions';
@@ -329,70 +340,102 @@ class AdminPage extends \Tainacan\Pages {
 			<li><a href="<?php echo esc_url( $base_url . '&status=all' ); ?>" class="<?php echo 'all' === $status_filter ? 'current' : ''; ?>"><?php esc_html_e( 'Todas', 'tainacan-metadata-crowdsource' ); ?></a></li>
 		</ul>
 
-		<?php if ( empty( $list ) ) : ?>
+		<?php
+		if ( empty( $list ) ) :
+			?>
 			<p class="tmc-empty"><?php esc_html_e( 'Nenhuma sugestão neste filtro.', 'tainacan-metadata-crowdsource' ); ?></p>
-		<?php else : ?>
-			<table class="wp-list-table widefat fixed striped">
-				<thead>
-					<tr>
-						<th><?php esc_html_e( 'Item', 'tainacan-metadata-crowdsource' ); ?></th>
-						<th><?php esc_html_e( 'Metadado', 'tainacan-metadata-crowdsource' ); ?></th>
-						<th><?php esc_html_e( 'Informação atual', 'tainacan-metadata-crowdsource' ); ?></th>
-						<th><?php esc_html_e( 'Informação sugerida', 'tainacan-metadata-crowdsource' ); ?></th>
-						<th><?php esc_html_e( 'Motivo', 'tainacan-metadata-crowdsource' ); ?></th>
-						<th><?php esc_html_e( 'Colaborador', 'tainacan-metadata-crowdsource' ); ?></th>
-						<th><?php esc_html_e( 'Data', 'tainacan-metadata-crowdsource' ); ?></th>
-						<th><?php esc_html_e( 'Status', 'tainacan-metadata-crowdsource' ); ?></th>
-						<th><?php esc_html_e( 'Ações', 'tainacan-metadata-crowdsource' ); ?></th>
-					</tr>
-				</thead>
-				<tbody>
-					<?php
-					foreach ( $list as $s ) :
-						$item_title = get_the_title( $s->item_id );
-						if ( ! $item_title ) {
-							$item_title = '#' . $s->item_id;
-						}
-						$metadatum = $s->metadatum_label ? $s->metadatum_label : '#' . $s->metadatum_id;
-						$old_value = '' !== (string) $s->old_value ? $s->old_value : __( '(vazio)', 'tainacan-metadata-crowdsource' );
-						$reason    = $s->reason ? $s->reason : '—';
-						$submitter = $s->submitter_name ? $s->submitter_name : __( 'anônimo', 'tainacan-metadata-crowdsource' );
-						?>
-						<tr data-suggestion-id="<?php echo (int) $s->id; ?>" class="tmc-row tmc-row-<?php echo esc_attr( $s->status ); ?>">
-							<td>
-								<strong><?php echo esc_html( $item_title ); ?></strong>
-								<div><a href="<?php echo esc_url( get_permalink( $s->item_id ) ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Ver item', 'tainacan-metadata-crowdsource' ); ?></a></div>
-							</td>
-							<td><?php echo esc_html( $metadatum ); ?></td>
-							<td class="tmc-val tmc-val-old"><?php echo esc_html( $old_value ); ?></td>
-							<td class="tmc-val tmc-val-new"><?php echo esc_html( $s->new_value ); ?></td>
-							<td><?php echo esc_html( $reason ); ?></td>
-							<td>
-								<?php echo esc_html( $submitter ); ?>
-								<?php if ( $s->submitter_email ) : ?>
-									<div><small><?php echo esc_html( $s->submitter_email ); ?></small></div>
-								<?php endif; ?>
-							</td>
-							<td><?php echo esc_html( mysql2date( 'd/m/Y H:i', $s->created_at ) ); ?></td>
-							<td>
-								<span class="tmc-status tmc-status-<?php echo esc_attr( $s->status ); ?>"><?php echo esc_html( $this->status_label( $s->status ) ); ?></span>
-								<?php if ( 'stale' === $s->status ) : ?>
-									<div><small><?php esc_html_e( 'O valor original mudou desde a sugestão.', 'tainacan-metadata-crowdsource' ); ?></small></div>
-								<?php endif; ?>
-							</td>
-							<td class="tmc-actions">
-								<?php if ( in_array( $s->status, array( 'pending', 'stale' ), true ) ) : ?>
-									<button class="button button-primary tmc-approve"><?php esc_html_e( 'Aprovar', 'tainacan-metadata-crowdsource' ); ?></button>
-									<button class="button tmc-reject"><?php esc_html_e( 'Rejeitar', 'tainacan-metadata-crowdsource' ); ?></button>
-								<?php else : ?>
-									<em>—</em>
-								<?php endif; ?>
-							</td>
-						</tr>
-					<?php endforeach; ?>
-				</tbody>
-			</table>
-		<?php endif; ?>
+			<?php
+		else :
+			// Agrupa por submissão (um envio de formulário). Linhas legadas sem
+			// submission_id viram grupos individuais.
+			$groups = array();
+			foreach ( $list as $s ) {
+				$key = ! empty( $s->submission_id ) ? 'sub-' . $s->submission_id : 'row-' . $s->id;
+				if ( ! isset( $groups[ $key ] ) ) {
+					$groups[ $key ] = array();
+				}
+				$groups[ $key ][] = $s;
+			}
+
+			foreach ( $groups as $rows ) :
+				$first      = $rows[0];
+				$item_title = get_the_title( $first->item_id );
+				if ( ! $item_title ) {
+					$item_title = '#' . $first->item_id;
+				}
+				$submitter = $first->submitter_name ? $first->submitter_name : __( 'anônimo', 'tainacan-metadata-crowdsource' );
+				$thanked   = ! empty( $first->thanked_at );
+				$can_thank = ! empty( $first->submission_id ) && ! empty( $first->submitter_email );
+				?>
+				<div class="tmc-submission" data-submission-id="<?php echo esc_attr( (string) $first->submission_id ); ?>">
+					<div class="tmc-submission-head">
+						<div class="tmc-submission-meta">
+							<strong class="tmc-submission-item"><?php echo esc_html( $item_title ); ?></strong>
+							<a href="<?php echo esc_url( get_permalink( $first->item_id ) ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Ver item', 'tainacan-metadata-crowdsource' ); ?></a>
+							<span class="tmc-submission-by">
+								<?php
+								echo esc_html( $submitter );
+								if ( $first->submitter_email ) {
+									echo ' &lt;' . esc_html( $first->submitter_email ) . '&gt;';
+								}
+								echo ' · ' . esc_html( mysql2date( 'd/m/Y H:i', $first->created_at ) );
+								?>
+							</span>
+						</div>
+						<div class="tmc-submission-actions">
+							<?php if ( $thanked ) : ?>
+								<span class="tmc-thanked">✓ <?php esc_html_e( 'Agradecido', 'tainacan-metadata-crowdsource' ); ?></span>
+							<?php elseif ( $can_thank ) : ?>
+								<button class="button tmc-thank"><?php esc_html_e( 'Enviar agradecimento', 'tainacan-metadata-crowdsource' ); ?></button>
+							<?php endif; ?>
+						</div>
+					</div>
+					<table class="wp-list-table widefat striped tmc-submission-table">
+						<thead>
+							<tr>
+								<th><?php esc_html_e( 'Metadado', 'tainacan-metadata-crowdsource' ); ?></th>
+								<th><?php esc_html_e( 'Informação atual', 'tainacan-metadata-crowdsource' ); ?></th>
+								<th><?php esc_html_e( 'Informação sugerida', 'tainacan-metadata-crowdsource' ); ?></th>
+								<th><?php esc_html_e( 'Motivo', 'tainacan-metadata-crowdsource' ); ?></th>
+								<th><?php esc_html_e( 'Status', 'tainacan-metadata-crowdsource' ); ?></th>
+								<th><?php esc_html_e( 'Ações', 'tainacan-metadata-crowdsource' ); ?></th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php
+							foreach ( $rows as $s ) :
+								$metadatum = $s->metadatum_label ? $s->metadatum_label : '#' . $s->metadatum_id;
+								$old_value = '' !== (string) $s->old_value ? $s->old_value : __( '(vazio)', 'tainacan-metadata-crowdsource' );
+								$reason    = $s->reason ? $s->reason : '—';
+								?>
+								<tr data-suggestion-id="<?php echo (int) $s->id; ?>" class="tmc-row tmc-row-<?php echo esc_attr( $s->status ); ?>">
+									<td><?php echo esc_html( $metadatum ); ?></td>
+									<td class="tmc-val tmc-val-old"><?php echo esc_html( $old_value ); ?></td>
+									<td class="tmc-val tmc-val-new"><?php echo esc_html( $s->new_value ); ?></td>
+									<td><?php echo esc_html( $reason ); ?></td>
+									<td>
+										<span class="tmc-status tmc-status-<?php echo esc_attr( $s->status ); ?>"><?php echo esc_html( $this->status_label( $s->status ) ); ?></span>
+										<?php if ( 'stale' === $s->status ) : ?>
+											<div><small><?php esc_html_e( 'O valor original mudou desde a sugestão.', 'tainacan-metadata-crowdsource' ); ?></small></div>
+										<?php endif; ?>
+									</td>
+									<td class="tmc-actions">
+										<?php if ( in_array( $s->status, array( 'pending', 'stale' ), true ) ) : ?>
+											<button class="button button-primary tmc-approve"><?php esc_html_e( 'Aprovar', 'tainacan-metadata-crowdsource' ); ?></button>
+											<button class="button tmc-reject"><?php esc_html_e( 'Rejeitar', 'tainacan-metadata-crowdsource' ); ?></button>
+										<?php else : ?>
+											<em>—</em>
+										<?php endif; ?>
+									</td>
+								</tr>
+							<?php endforeach; ?>
+						</tbody>
+					</table>
+				</div>
+				<?php
+			endforeach;
+		endif;
+		?>
 		<?php
 	}
 

@@ -47,6 +47,11 @@ class Plugin {
 	 * @return void
 	 */
 	public function boot() {
+		// Upgrade do schema quando a versão do plugin muda (adiciona colunas novas).
+		if ( is_admin() ) {
+			\TMC\Database\Tables::maybe_upgrade();
+		}
+
 		// REST API.
 		$api = new API();
 		add_action( 'rest_api_init', array( $api, 'register_routes' ) );

@@ -4,7 +4,7 @@ Tags: tainacan, crowdsourcing, metadata, museum, collections
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -49,10 +49,20 @@ Sim. O formulário lê os metadados do item informado, independentemente da cole
 
 == Changelog ==
 
+= 1.1.0 =
+* Formulário em modal (metadados em duas colunas) na página do item, via hook do tema Tainacan Interface.
+* Novo campo "Descrição da imagem" (quando o item tem documento), aplicável ao conteúdo do item.
+* Moderação agrupada por submissão: cada metadado é aceito ou rejeitado separadamente.
+* Mensagem de agradecimento por e-mail ao colaborador após a avaliação.
+* Segurança: CAPTCHA stateless (sem escrita no banco em endpoint público), validação de item Tainacan publicado, limite de envios por hora, limite de tamanho do valor e gate de permissão (manage_options) para visualizar dados pessoais.
+
 = 1.0.0 =
 * Versão inicial: submissão pública de sugestões, moderação no admin, detecção de "stale", anti-spam local e notificação por e-mail.
 
 == Upgrade Notice ==
+
+= 1.1.0 =
+Modal na página do item, campo de descrição da imagem, moderação por submissão com agradecimento e endurecimento de segurança.
 
 = 1.0.0 =
 Versão inicial.

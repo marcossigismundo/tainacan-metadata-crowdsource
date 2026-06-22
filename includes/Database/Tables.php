@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Tables {
 
 	/**
-	 * Cria (ou atualiza) a tabela via dbDelta.
+	 * Cria (ou atualiza, via dbDelta) a tabela e grava a versão do schema.
 	 *
 	 * @return void
 	 */
@@ -30,6 +30,7 @@ class Tables {
 
 		$sql = "CREATE TABLE $table (
 			id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+			submission_id varchar(64) DEFAULT NULL,
 			item_id bigint(20) UNSIGNED NOT NULL,
 			collection_id bigint(20) UNSIGNED DEFAULT NULL,
 			metadatum_id bigint(20) UNSIGNED NOT NULL,
@@ -47,9 +48,11 @@ class Tables {
 			reviewed_by bigint(20) UNSIGNED DEFAULT NULL,
 			reviewed_at datetime DEFAULT NULL,
 			review_notes text DEFAULT NULL,
+			thanked_at datetime DEFAULT NULL,
 			created_at datetime DEFAULT CURRENT_TIMESTAMP,
 			updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 			PRIMARY KEY (id),
+			KEY submission_id (submission_id),
 			KEY item_id (item_id),
 			KEY metadatum_id (metadatum_id),
 			KEY status (status),
@@ -59,6 +62,17 @@ class Tables {
 		dbDelta( $sql );
 
 		update_option( 'tmc_db_version', TMC_VERSION );
+	}
+
+	/**
+	 * Executa o upgrade do schema quando a versão gravada difere da atual.
+	 *
+	 * @return void
+	 */
+	public static function maybe_upgrade() {
+		if ( get_option( 'tmc_db_version' ) !== TMC_VERSION ) {
+			self::create();
+		}
 	}
 
 	/**

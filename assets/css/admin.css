@@ -139,3 +139,59 @@
     color: #5e6c70;
     font-style: italic;
 }
+
+/* Cards de submissão (sugestões agrupadas por envio). */
+.tmc-submission {
+    margin: 0 0 1.25rem;
+    border: 1px solid #e0e6e9;
+    border-radius: 6px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.tmc-submission-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0.75rem 1rem;
+    background: #f0f4f6;
+    border-bottom: 1px solid #e0e6e9;
+}
+
+.tmc-submission-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.tmc-submission-item {
+    font-size: 1.02em;
+    color: #1d2327;
+}
+
+.tmc-submission-by {
+    color: #5e6c70;
+    font-size: 0.85em;
+}
+
+.tmc-submission-table {
+    margin: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+.tmc-submission-actions .tmc-thank {
+    color: #298596;
+    border-color: #298596;
+}
+
+.tmc-thanked {
+    color: #1a6b2f;
+    font-weight: 600;
+    font-size: 0.9em;
+    white-space: nowrap;
+}

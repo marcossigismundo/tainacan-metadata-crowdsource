@@ -44,6 +44,17 @@ class SuggestionsManager {
 	const STATUS_STALE    = 'stale';
 
 	/**
+	 * Sentinela de metadatum_id para o campo especial "Descrição da imagem"
+	 * (mapeia para o post_content do item, não para um metadado Tainacan).
+	 */
+	const DESCRIPTION_ID = 0;
+
+	/**
+	 * Tamanho máximo (em caracteres) de um valor sugerido.
+	 */
+	const MAX_VALUE_LENGTH = 5000;
+
+	/**
 	 * Construtor.
 	 */
 	public function __construct() {
@@ -66,19 +77,24 @@ class SuggestionsManager {
 		$metadatum_id = (int) $metadatum_id;
 		$new_value    = is_array( $new_value ) ? implode( '||', $new_value ) : (string) $new_value;
 
-		if ( $item_id <= 0 || $metadatum_id <= 0 ) {
+		// metadatum_id 0 é o campo especial de descrição; negativos são inválidos.
+		if ( $item_id <= 0 || $metadatum_id < 0 ) {
 			return new \WP_Error( 'tmc_invalid_params', __( 'Item e metadado são obrigatórios.', 'tainacan-metadata-crowdsource' ) );
 		}
 		if ( '' === trim( $new_value ) ) {
 			return new \WP_Error( 'tmc_empty_value', __( 'O novo valor não pode ser vazio.', 'tainacan-metadata-crowdsource' ) );
 		}
-		if ( ! get_post( $item_id ) ) {
-			return new \WP_Error( 'tmc_item_not_found', __( 'Item não encontrado.', 'tainacan-metadata-crowdsource' ) );
+		if ( mb_strlen( $new_value ) > self::MAX_VALUE_LENGTH ) {
+			return new \WP_Error( 'tmc_value_too_long', __( 'O valor sugerido é muito longo.', 'tainacan-metadata-crowdsource' ) );
+		}
+		if ( ! $this->is_valid_target_item( $item_id ) ) {
+			return new \WP_Error( 'tmc_item_not_found', __( 'Item não encontrado ou indisponível para sugestões.', 'tainacan-metadata-crowdsource' ) );
 		}
 
 		$current = $this->get_current_metadatum_value( $item_id, $metadatum_id );
 
 		$data = array(
+			'submission_id'        => isset( $context['submission_id'] ) ? substr( (string) $context['submission_id'], 0, 64 ) : null,
 			'item_id'              => $item_id,
 			'collection_id'        => $current['collection_id'] ?? null,
 			'metadatum_id'         => $metadatum_id,
@@ -320,30 +336,42 @@ class SuggestionsManager {
 				return array();
 			}
 
-			$item_metadata = $item->get_metadata();
-			if ( empty( $item_metadata ) ) {
-				return array();
+			$out = array();
+
+			// Campo especial: descrição da imagem (post_content do item), só quando
+			// o item tem um documento (imagem/arquivo) ao qual a descrição se refere.
+			if ( $this->item_has_document( $item ) ) {
+				$post  = get_post( $item_id );
+				$out[] = array(
+					'metadatum_id' => self::DESCRIPTION_ID,
+					'slug'         => 'description',
+					'label'        => __( 'Descrição da imagem', 'tainacan-metadata-crowdsource' ),
+					'current'      => $post ? (string) $post->post_content : '',
+					'is_multiple'  => false,
+				);
 			}
 
-			$out = array();
-			foreach ( $item_metadata as $im ) {
-				$metadatum = $im->get_metadatum();
-				if ( ! $metadatum ) {
-					continue;
+			$item_metadata = $item->get_metadata();
+			if ( ! empty( $item_metadata ) ) {
+				foreach ( $item_metadata as $im ) {
+					$metadatum = $im->get_metadatum();
+					if ( ! $metadatum ) {
+						continue;
+					}
+
+					$value      = $im->get_value();
+					$value_text = is_array( $value )
+						? implode( ', ', array_map( 'strval', $value ) )
+						: (string) $value;
+
+					$out[] = array(
+						'metadatum_id' => $metadatum->get_id(),
+						'slug'         => $metadatum->get_slug(),
+						'label'        => $metadatum->get_name(),
+						'current'      => $value_text,
+						'is_multiple'  => $metadatum->is_multiple(),
+					);
 				}
-
-				$value      = $im->get_value();
-				$value_text = is_array( $value )
-					? implode( ', ', array_map( 'strval', $value ) )
-					: (string) $value;
-
-				$out[] = array(
-					'metadatum_id' => $metadatum->get_id(),
-					'slug'         => $metadatum->get_slug(),
-					'label'        => $metadatum->get_name(),
-					'current'      => $value_text,
-					'is_multiple'  => $metadatum->is_multiple(),
-				);
 			}
 			return $out;
 		} catch ( \Throwable $e ) {
@@ -365,6 +393,10 @@ class SuggestionsManager {
 			'slug'          => null,
 			'collection_id' => null,
 		);
+
+		if ( self::DESCRIPTION_ID === (int) $metadatum_id ) {
+			return $this->get_description_field_value( $item_id );
+		}
 
 		if ( ! class_exists( '\Tainacan\Repositories\Items' ) ) {
 			return $out;
@@ -413,6 +445,10 @@ class SuggestionsManager {
 	 * @return true|\WP_Error
 	 */
 	private function apply_to_tainacan( $suggestion ) {
+		if ( self::DESCRIPTION_ID === (int) $suggestion->metadatum_id ) {
+			return $this->apply_description( $suggestion );
+		}
+
 		if ( ! class_exists( '\Tainacan\Repositories\Items' ) ) {
 			return new \WP_Error( 'tmc_tainacan_missing', __( 'Tainacan não está disponível.', 'tainacan-metadata-crowdsource' ) );
 		}
@@ -456,6 +492,204 @@ class SuggestionsManager {
 		} catch ( \Throwable $e ) {
 			return new \WP_Error( 'tmc_apply_error', $e->getMessage() );
 		}
+	}
+
+	/**
+	 * Lê a descrição da imagem (post_content) do item.
+	 *
+	 * @param int $item_id ID do item.
+	 * @return array value_text, label, slug, collection_id.
+	 */
+	private function get_description_field_value( $item_id ) {
+		$post          = get_post( (int) $item_id );
+		$collection_id = null;
+		if ( $post && preg_match( '/^tnc_col_(\d+)_item$/', $post->post_type, $matches ) ) {
+			$collection_id = (int) $matches[1];
+		}
+		return array(
+			'value_text'    => $post ? (string) $post->post_content : '',
+			'label'         => __( 'Descrição da imagem', 'tainacan-metadata-crowdsource' ),
+			'slug'          => 'description',
+			'collection_id' => $collection_id,
+		);
+	}
+
+	/**
+	 * Indica se o item tem documento (imagem/arquivo) ao qual a descrição se aplica.
+	 *
+	 * @param object $item Entidade do item Tainacan.
+	 * @return bool
+	 */
+	private function item_has_document( $item ) {
+		if ( ! is_object( $item ) || ! method_exists( $item, 'get_document_type' ) ) {
+			return false;
+		}
+		$type = $item->get_document_type();
+		return ! empty( $type ) && 'empty' !== $type;
+	}
+
+	/**
+	 * Valida que o alvo é um item Tainacan publicado (proteção do endpoint público).
+	 *
+	 * @param int $item_id ID do item.
+	 * @return bool
+	 */
+	private function is_valid_target_item( $item_id ) {
+		$post = get_post( (int) $item_id );
+		if ( ! $post || 'publish' !== $post->post_status ) {
+			return false;
+		}
+		return (bool) preg_match( '/^tnc_col_\d+_item$/', $post->post_type );
+	}
+
+	/**
+	 * Aplica a sugestão de descrição da imagem ao post_content do item.
+	 *
+	 * @param object $suggestion Linha da sugestão.
+	 * @return true|\WP_Error
+	 */
+	private function apply_description( $suggestion ) {
+		$item_id = (int) $suggestion->item_id;
+		$value   = wp_kses_post( (string) $suggestion->new_value );
+
+		if ( ! $this->is_valid_target_item( $item_id ) ) {
+			return new \WP_Error( 'tmc_item_missing', __( 'Item Tainacan não encontrado.', 'tainacan-metadata-crowdsource' ) );
+		}
+
+		// Prefere a entidade Tainacan (respeita hooks); cai para wp_update_post.
+		if ( class_exists( '\Tainacan\Repositories\Items' ) ) {
+			try {
+				$items_repo = \Tainacan\Repositories\Items::get_instance();
+				$item       = $items_repo->fetch( $item_id );
+				if ( $item && ! is_wp_error( $item ) && method_exists( $item, 'set_description' ) ) {
+					$item->set_description( $value );
+					if ( $item->validate() ) {
+						$items_repo->insert( $item );
+						return true;
+					}
+					return new \WP_Error(
+						'tmc_invalid_value',
+						sprintf(
+							/* translators: %s: lista de erros de validação retornada pelo Tainacan. */
+							__( 'Valor inválido: %s', 'tainacan-metadata-crowdsource' ),
+							wp_json_encode( $item->get_errors() )
+						)
+					);
+				}
+			} catch ( \Throwable $e ) {
+				return new \WP_Error( 'tmc_apply_error', $e->getMessage() );
+			}
+		}
+
+		$updated = wp_update_post(
+			array(
+				'ID'           => $item_id,
+				'post_content' => $value,
+			),
+			true
+		);
+		if ( is_wp_error( $updated ) ) {
+			return $updated;
+		}
+		return true;
+	}
+
+	/**
+	 * Retorna as sugestões de uma submissão (envio único de formulário).
+	 *
+	 * @param string $submission_id Identificador da submissão.
+	 * @return array
+	 */
+	public function get_by_submission( $submission_id ) {
+		$submission_id = $this->sanitize_submission_id( $submission_id );
+		if ( '' === $submission_id ) {
+			return array();
+		}
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin's own table; not available via WP_Query; submission_id via %s placeholder.
+		return $this->wpdb->get_results( $this->wpdb->prepare( "SELECT * FROM {$this->table} WHERE submission_id = %s ORDER BY id ASC", $submission_id ) );
+	}
+
+	/**
+	 * Marca todas as sugestões de uma submissão como agradecidas.
+	 *
+	 * @param string $submission_id Identificador da submissão.
+	 * @return void
+	 */
+	public function mark_thanked( $submission_id ) {
+		$submission_id = $this->sanitize_submission_id( $submission_id );
+		if ( '' === $submission_id ) {
+			return;
+		}
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin's own table; write path; values via %s placeholders.
+		$this->wpdb->query( $this->wpdb->prepare( "UPDATE {$this->table} SET thanked_at = %s WHERE submission_id = %s", current_time( 'mysql' ), $submission_id ) );
+	}
+
+	/**
+	 * Envia um agradecimento ao(s) colaborador(es) de uma submissão.
+	 *
+	 * @param string $submission_id Identificador da submissão.
+	 * @param string $message       Mensagem personalizada (opcional).
+	 * @return int|\WP_Error Quantidade de e-mails enviados ou erro.
+	 */
+	public function thank_submission( $submission_id, $message = '' ) {
+		$rows = $this->get_by_submission( $submission_id );
+		if ( empty( $rows ) ) {
+			return new \WP_Error( 'tmc_not_found', __( 'Submissão não encontrada.', 'tainacan-metadata-crowdsource' ) );
+		}
+
+		$emails = array();
+		foreach ( $rows as $row ) {
+			if ( ! empty( $row->submitter_email ) && is_email( $row->submitter_email ) ) {
+				$emails[ strtolower( $row->submitter_email ) ] = sanitize_email( $row->submitter_email );
+			}
+		}
+		if ( empty( $emails ) ) {
+			return new \WP_Error( 'tmc_no_email', __( 'O colaborador não informou e-mail.', 'tainacan-metadata-crowdsource' ) );
+		}
+
+		$message = trim( wp_strip_all_tags( (string) $message ) );
+		if ( '' === $message ) {
+			$message = $this->default_thanks_message();
+		}
+
+		$subject = sprintf(
+			/* translators: %s: nome do site. */
+			__( 'Obrigado pela sua contribuição — %s', 'tainacan-metadata-crowdsource' ),
+			wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES )
+		);
+
+		$sent = 0;
+		foreach ( $emails as $email ) {
+			if ( wp_mail( $email, $subject, $message ) ) {
+				++$sent;
+			}
+		}
+
+		if ( $sent > 0 ) {
+			$this->mark_thanked( $submission_id );
+			return $sent;
+		}
+		return new \WP_Error( 'tmc_mail_failed', __( 'Não foi possível enviar o e-mail de agradecimento.', 'tainacan-metadata-crowdsource' ) );
+	}
+
+	/**
+	 * Sanitiza um identificador de submissão (UUID v4 hex/hífen).
+	 *
+	 * @param string $submission_id Valor recebido.
+	 * @return string
+	 */
+	private function sanitize_submission_id( $submission_id ) {
+		$submission_id = preg_replace( '/[^a-fA-F0-9\-]/', '', (string) $submission_id );
+		return substr( (string) $submission_id, 0, 64 );
+	}
+
+	/**
+	 * Mensagem padrão de agradecimento.
+	 *
+	 * @return string
+	 */
+	private function default_thanks_message() {
+		return __( 'Olá! Agradecemos de coração a sua colaboração com o acervo. Suas sugestões foram avaliadas pela nossa equipe. Contribuições como a sua ajudam a preservar e qualificar a memória deste acervo. Muito obrigado!', 'tainacan-metadata-crowdsource' );
 	}
 
 	/**
