@@ -4,7 +4,7 @@ Tags: tainacan, crowdsourcing, metadata, museum, collections
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.4.2
+Stable tag: 1.4.3
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -55,8 +55,11 @@ Não. Enquanto uma coleção não for configurada na aba "Coleções", ela conti
 
 == Changelog ==
 
+= 1.4.3 =
+* Correção (definitiva): a aba "Coleções" não rolava até o fim. Causa real: os containers de altura fixa do Tainacan (`100vh`) somados a avisos do WordPress (ex.: "nova versão disponível") empurravam o conteúdo para além da viewport, e a rolagem aninhada não alcançava o fim. Agora, nas páginas do plugin, as alturas/overflow fixos são neutralizados e a rolagem passa a ser a natural do navegador, com a barra lateral do Tainacan fixa. (O `flex-shrink` da 1.4.2 não bastava.) Validado medindo o alcance da rolagem em navegador headless.
+
 = 1.4.2 =
-* Correção: na aba "Coleções", a página não rolava até o fim quando havia muitas coleções (as últimas ficavam inacessíveis). O container de conteúdo agora não é encolhido dentro do layout flex do Tainacan (`flex-shrink: 0`), permitindo que a rolagem alcance o final da lista.
+* Correção parcial (insuficiente; ver 1.4.3): tentativa de impedir o encolhimento do container de conteúdo no layout flex do Tainacan (`flex-shrink: 0`).
 
 = 1.4.1 =
 * Correção: a seleção de metadados por coleção não era salva na primeira gravação (ao recarregar, todos voltavam marcados). Causa: ao criar a option, o WordPress aplica o saneamento duas vezes (update_option → add_option) e a segunda passada recebia o valor já normalizado, sem o marcador do formulário, zerando a configuração. O saneamento agora é idempotente.

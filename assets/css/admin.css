@@ -147,22 +147,51 @@
     overflow: hidden;
 }
 
-/* O Tainacan dá ao container de conteúdo uma altura fixa (calc 100vh - …) com
-   rolagem interna própria — e essa rolagem aninhada não alcança o fim do nosso
-   conteúdo. Removemos a altura fixa para que o conteúdo cresça naturalmente e a
-   rolagem fique a cargo do container pai (#tainacan-page-container--inner, que
-   já rola a viewport). O subheader continua "sticky" no topo.
+/* Rolagem das páginas do plugin.
+   O Tainacan usa containers de ALTURA FIXA (calc 100vh − …) com rolagem interna
+   aninhada (#tainacan-page-container overflow:hidden; #...--inner e
+   .tainacan-page-container-content com height fixo + overflow-y:auto). Nas
+   páginas clássicas deste plugin isso corta o fim do conteúdo de duas formas:
+     1. .tmc-wrap é um flex item de --inner e era ENCOLHIDO para caber, gerando
+        uma rolagem aninhada que não alcança o fim (aba "Coleções", lista longa);
+     2. notices do WP (ex.: o aviso "WordPress disponível") empurram o container
+        para baixo — como a altura é fixa, o fim estoura a viewport e some.
+   Solução robusta: nesta página (este CSS só carrega aqui, as telas SPA do
+   Tainacan não são afetadas) neutralizamos as alturas fixas e o overflow dos
+   containers e deixamos a rolagem ser a NATURAL do navegador (window). */
+#tainacan-page-container {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    grid-template-rows: auto !important;
+}
 
-   flex-shrink:0 é essencial: o #tainacan-page-container--inner é um flex column
-   (overflow-y:auto, altura fixa = 100vh). Sem isto, o .tmc-wrap (flex item) é
-   ENCOLHIDO para caber na altura do pai quando o conteúdo é longo (ex.: aba
-   "Coleções" com muitas coleções), e aí o pai não tem o que rolar e o fim da
-   lista fica inalcançável. Mantendo a altura natural, o pai rola até o fim. */
+#tainacan-page-container > #tainacan-page-container--inner {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+}
+
+/* A barra lateral do Tainacan continua acessível: fixa na viewport, com sua
+   própria rolagem (já tem overflow-y:auto e altura de viewport). */
+#tainacan-page-container > #tainacan-navigation-menu {
+    position: sticky;
+    top: var(--wp-admin--admin-bar--height, 32px);
+    align-self: start;
+}
+
 .tmc-wrap.tainacan-page-container-content {
-    height: auto;
-    max-height: none;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
     flex-shrink: 0;
     padding-bottom: 4rem;
+}
+
+/* Sem o scroll aninhado, o subheader "sticky" passaria a grudar sob a barra de
+   admin de forma estranha; deixamos rolar junto com o conteúdo. */
+.tmc-wrap .tainacan-fixed-subheader {
+    position: static;
 }
 
 /* Cards de submissão (sugestões agrupadas por envio). */
