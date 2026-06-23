@@ -159,6 +159,16 @@
    Solução robusta: nesta página (este CSS só carrega aqui, as telas SPA do
    Tainacan não são afetadas) neutralizamos as alturas fixas e o overflow dos
    containers e deixamos a rolagem ser a NATURAL do navegador (window). */
+
+/* O Tainacan trava a rolagem global com `html{overflow:hidden}` (para obrigar o
+   scroll interno dos seus containers de altura fixa). Como aqui passamos a usar
+   a rolagem natural da janela, precisamos DESTRAVAR a vertical — senão a janela
+   não rola, a barra de rolagem some e o conteúdo fica preso. Mantemos overflow-x
+   intacto (a regra do Tainacan era `overflow:hidden`, que cobre os dois eixos). */
+html {
+    overflow-y: auto !important;
+}
+
 #tainacan-page-container {
     height: auto !important;
     max-height: none !important;

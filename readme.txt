@@ -4,7 +4,7 @@ Tags: tainacan, crowdsourcing, metadata, museum, collections
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.4.3
+Stable tag: 1.4.4
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -54,6 +54,9 @@ Sim. Por padrão o formulário lê todos os metadados públicos do item. Em **Cr
 Não. Enquanto uma coleção não for configurada na aba "Coleções", ela continua aceitando sugestões em todos os metadados públicos, como antes. A allowlist só passa a valer depois que você salva a configuração daquela coleção.
 
 == Changelog ==
+
+= 1.4.4 =
+* Correção: a 1.4.3 (rolagem natural) tirava a barra de rolagem e travava a página, porque o Tainacan define `html { overflow: hidden }` para forçar o scroll interno dos seus containers. Agora a rolagem vertical da janela é destravada nas páginas do plugin, devolvendo a barra de rolagem e o acesso ao fim do conteúdo. Validado em navegador headless.
 
 = 1.4.3 =
 * Correção (definitiva): a aba "Coleções" não rolava até o fim. Causa real: os containers de altura fixa do Tainacan (`100vh`) somados a avisos do WordPress (ex.: "nova versão disponível") empurravam o conteúdo para além da viewport, e a rolagem aninhada não alcançava o fim. Agora, nas páginas do plugin, as alturas/overflow fixos são neutralizados e a rolagem passa a ser a natural do navegador, com a barra lateral do Tainacan fixa. (O `flex-shrink` da 1.4.2 não bastava.) Validado medindo o alcance da rolagem em navegador headless.
