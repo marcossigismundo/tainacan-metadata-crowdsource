@@ -3,7 +3,7 @@
  * Plugin Name: Tainacan Metadata Crowdsource
  * Plugin URI:  https://github.com/marcossigismundo/tainacan-metadata-crowdsource
  * Description: Permite que visitantes sugiram correções nos metadados dos itens Tainacan. Sugestões passam por moderação da equipe antes de serem aplicadas.
- * Version:     1.4.0
+ * Version:     1.4.1
  * Author:      Tainacan Team
  * License:     GPL-3.0+
  * Text Domain: tainacan-metadata-crowdsource
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TMC_VERSION', '1.4.0' );
+define( 'TMC_VERSION', '1.4.1' );
 define( 'TMC_PLUGIN_FILE', __FILE__ );
 define( 'TMC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'TMC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

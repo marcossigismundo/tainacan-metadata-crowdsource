@@ -141,43 +141,84 @@ class CollectionConfig {
 	 * `__collections__`) e funde com a config já gravada — assim salvar uma
 	 * coleção não apaga as demais (cada coleção tem seu próprio formulário).
 	 *
-	 * @param mixed $raw Valor cru do POST.
+	 * **Idempotência (importante):** ao criar a option pela primeira vez, o
+	 * WordPress aplica `sanitize_option` duas vezes (`update_option` chama
+	 * `add_option`, e ambos saneiam). Na segunda passada o valor recebido já é
+	 * a saída normalizada da primeira — sem o marcador `__collections__`. Por
+	 * isso, quando o marcador está ausente, tratamos a entrada como mapa já
+	 * final: apenas revalida e devolve, sem reler/mesclar (o que zeraria a
+	 * config recém-montada e fazia a seleção "não salvar").
+	 *
+	 * @param mixed $raw Valor cru do POST (1ª passada) ou mapa já saneado (2ª).
 	 * @return array<int,array>
 	 */
 	public static function sanitize( $raw ) {
-		$out = self::get_all();
-
 		if ( ! is_array( $raw ) ) {
-			return $out;
+			return self::get_all();
 		}
 
-		$page_collections = ( isset( $raw['__collections__'] ) && is_array( $raw['__collections__'] ) )
-			? array_map( 'absint', $raw['__collections__'] )
-			: array();
+		// 2ª passada (reentrante): valor já normalizado, sem o marcador.
+		if ( ! isset( $raw['__collections__'] ) ) {
+			return self::normalize_map( $raw );
+		}
 
-		foreach ( $page_collections as $cid ) {
+		// 1ª passada: vem do formulário (um <form> por coleção). Funde as
+		// coleções presentes na página com a config já gravada das demais.
+		$out  = self::get_all();
+		$page = array_map( 'absint', (array) $raw['__collections__'] );
+
+		foreach ( $page as $cid ) {
 			if ( $cid <= 0 ) {
 				continue;
 			}
-
-			$entry    = ( isset( $raw[ $cid ] ) && is_array( $raw[ $cid ] ) ) ? $raw[ $cid ] : array();
-			$metadata = array();
-			if ( ! empty( $entry['metadata'] ) && is_array( $entry['metadata'] ) ) {
-				$metadata = array_values(
-					array_unique(
-						array_filter( array_map( 'absint', $entry['metadata'] ) )
-					)
-				);
-				$metadata = array_slice( $metadata, 0, self::MAX_METADATA );
-			}
-
-			$out[ $cid ] = array(
-				'enabled'     => empty( $entry['enabled'] ) ? 0 : 1,
-				'description' => empty( $entry['description'] ) ? 0 : 1,
-				'metadata'    => $metadata,
-			);
+			$entry       = ( isset( $raw[ $cid ] ) && is_array( $raw[ $cid ] ) ) ? $raw[ $cid ] : array();
+			$out[ $cid ] = self::normalize_entry( $entry );
 		}
 
+		return self::normalize_map( $out );
+	}
+
+	/**
+	 * Normaliza um mapa coleção => config (descarta chaves não-numéricas).
+	 *
+	 * @param mixed $map Mapa a normalizar.
+	 * @return array<int,array>
+	 */
+	private static function normalize_map( $map ) {
+		$out = array();
+		if ( ! is_array( $map ) ) {
+			return $out;
+		}
+		foreach ( $map as $cid => $entry ) {
+			$cid = (int) $cid;
+			if ( $cid <= 0 || ! is_array( $entry ) ) {
+				continue;
+			}
+			$out[ $cid ] = self::normalize_entry( $entry );
+		}
 		return $out;
+	}
+
+	/**
+	 * Normaliza uma entrada de coleção em { enabled, description, metadata }.
+	 *
+	 * @param array $entry Entrada crua.
+	 * @return array{enabled:int,description:int,metadata:array<int,int>}
+	 */
+	private static function normalize_entry( $entry ) {
+		$metadata = array();
+		if ( ! empty( $entry['metadata'] ) && is_array( $entry['metadata'] ) ) {
+			$metadata = array_values(
+				array_unique(
+					array_filter( array_map( 'absint', $entry['metadata'] ) )
+				)
+			);
+			$metadata = array_slice( $metadata, 0, self::MAX_METADATA );
+		}
+		return array(
+			'enabled'     => empty( $entry['enabled'] ) ? 0 : 1,
+			'description' => empty( $entry['description'] ) ? 0 : 1,
+			'metadata'    => $metadata,
+		);
 	}
 }
