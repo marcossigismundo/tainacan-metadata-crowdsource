@@ -4,7 +4,7 @@ Tags: tainacan, crowdsourcing, metadata, museum, collections
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.4.1
+Stable tag: 1.4.2
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -54,6 +54,9 @@ Sim. Por padrão o formulário lê todos os metadados públicos do item. Em **Cr
 Não. Enquanto uma coleção não for configurada na aba "Coleções", ela continua aceitando sugestões em todos os metadados públicos, como antes. A allowlist só passa a valer depois que você salva a configuração daquela coleção.
 
 == Changelog ==
+
+= 1.4.2 =
+* Correção: na aba "Coleções", a página não rolava até o fim quando havia muitas coleções (as últimas ficavam inacessíveis). O container de conteúdo agora não é encolhido dentro do layout flex do Tainacan (`flex-shrink: 0`), permitindo que a rolagem alcance o final da lista.
 
 = 1.4.1 =
 * Correção: a seleção de metadados por coleção não era salva na primeira gravação (ao recarregar, todos voltavam marcados). Causa: ao criar a option, o WordPress aplica o saneamento duas vezes (update_option → add_option) e a segunda passada recebia o valor já normalizado, sem o marcador do formulário, zerando a configuração. O saneamento agora é idempotente.

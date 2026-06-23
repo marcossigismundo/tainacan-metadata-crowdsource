@@ -151,10 +151,17 @@
    rolagem interna própria — e essa rolagem aninhada não alcança o fim do nosso
    conteúdo. Removemos a altura fixa para que o conteúdo cresça naturalmente e a
    rolagem fique a cargo do container pai (#tainacan-page-container--inner, que
-   já rola a viewport). O subheader continua "sticky" no topo. */
+   já rola a viewport). O subheader continua "sticky" no topo.
+
+   flex-shrink:0 é essencial: o #tainacan-page-container--inner é um flex column
+   (overflow-y:auto, altura fixa = 100vh). Sem isto, o .tmc-wrap (flex item) é
+   ENCOLHIDO para caber na altura do pai quando o conteúdo é longo (ex.: aba
+   "Coleções" com muitas coleções), e aí o pai não tem o que rolar e o fim da
+   lista fica inalcançável. Mantendo a altura natural, o pai rola até o fim. */
 .tmc-wrap.tainacan-page-container-content {
     height: auto;
     max-height: none;
+    flex-shrink: 0;
     padding-bottom: 4rem;
 }
 
