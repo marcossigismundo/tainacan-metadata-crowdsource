@@ -152,7 +152,7 @@ class Shortcode {
 					</p>
 
 					<form class="tmc-form" novalidate>
-						<div class="tmc-fields<?php echo $modal ? ' tmc-fields-grid' : ''; ?>">
+						<div class="tmc-fields">
 							<?php
 							foreach ( $metadata as $md ) :
 								$is_multiple = ! empty( $md['is_multiple'] );

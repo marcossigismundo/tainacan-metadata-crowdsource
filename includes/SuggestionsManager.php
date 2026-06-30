@@ -406,20 +406,15 @@ class SuggestionsManager {
 
 			$out = array();
 
-			// Campo especial: descrição da imagem (post_content do item), só quando
-			// o item tem um documento (imagem/arquivo) ao qual a descrição se refere
-			// e a coleção permite sugestões nesse campo.
-			if ( $this->item_has_document( $item ) && CollectionConfig::is_description_allowed( $collection_id ) ) {
-				$post  = get_post( $item_id );
-				$out[] = array(
-					'metadatum_id' => self::DESCRIPTION_ID,
-					'slug'         => 'description',
-					'label'        => __( 'Descrição da imagem', 'tainacan-metadata-crowdsource' ),
-					'current'      => $post ? (string) $post->post_content : '',
-					'is_multiple'  => false,
-				);
-			}
+			// O campo especial "Descrição da imagem" (post_content do item) foi
+			// removido do formulário: na prática ele duplica o metadado "Âmbito e
+			// conteúdo", gerando dois campos com o mesmo texto. O backend de
+			// aplicação/leitura (DESCRIPTION_ID) é mantido para concluir a revisão
+			// de sugestões de descrição já existentes no banco.
 
+			// $item->get_metadata() já devolve os metadados na ordem configurada na
+			// coleção (Metadata::order_result via get_metadata_order) — a mesma ordem
+			// exibida na página do item no Tainacan.
 			$item_metadata = $item->get_metadata();
 			if ( ! empty( $item_metadata ) ) {
 				foreach ( $item_metadata as $im ) {
@@ -595,20 +590,6 @@ class SuggestionsManager {
 			'slug'          => 'description',
 			'collection_id' => $collection_id,
 		);
-	}
-
-	/**
-	 * Indica se o item tem documento (imagem/arquivo) ao qual a descrição se aplica.
-	 *
-	 * @param object $item Entidade do item Tainacan.
-	 * @return bool
-	 */
-	private function item_has_document( $item ) {
-		if ( ! is_object( $item ) || ! method_exists( $item, 'get_document_type' ) ) {
-			return false;
-		}
-		$type = $item->get_document_type();
-		return ! empty( $type ) && 'empty' !== $type;
 	}
 
 	/**

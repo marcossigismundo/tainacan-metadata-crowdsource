@@ -4,7 +4,7 @@ Tags: tainacan, crowdsourcing, metadata, museum, collections
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.4.4
+Stable tag: 1.5.0
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -54,6 +54,11 @@ Sim. Por padrão o formulário lê todos os metadados públicos do item. Em **Cr
 Não. Enquanto uma coleção não for configurada na aba "Coleções", ela continua aceitando sugestões em todos os metadados públicos, como antes. A allowlist só passa a valer depois que você salva a configuração daquela coleção.
 
 == Changelog ==
+
+= 1.5.0 =
+* Modal redesenhado: diálogo focado e moderno (mais estreito e centralizado, cantos arredondados, sombra e foco suaves, botão em pílula), em vez do painel largo de duas colunas. Em telas pequenas o modal sobe de baixo, ocupando a largura total.
+* Ordem dos metadados: os campos passam a seguir exatamente a ordem configurada na coleção do Tainacan (a mesma exibida na página do item). A antiga grade de duas colunas reposicionava os campos visualmente; agora é uma lista de coluna única.
+* Removido o campo "Descrição da imagem" do formulário: na prática ele duplicava o metadado "Âmbito e conteúdo". A revisão de sugestões de descrição já existentes no banco continua funcionando.
 
 = 1.4.4 =
 * Correção: a 1.4.3 (rolagem natural) tirava a barra de rolagem e travava a página, porque o Tainacan define `html { overflow: hidden }` para forçar o scroll interno dos seus containers. Agora a rolagem vertical da janela é destravada nas páginas do plugin, devolvendo a barra de rolagem e o acesso ao fim do conteúdo. Validado em navegador headless.
