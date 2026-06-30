@@ -4,7 +4,7 @@ Tags: tainacan, crowdsourcing, metadata, museum, collections
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.5.1
+Stable tag: 1.5.2
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -54,6 +54,9 @@ Sim. Por padrão o formulário lê todos os metadados públicos do item. Em **Cr
 Não. Enquanto uma coleção não for configurada na aba "Coleções", ela continua aceitando sugestões em todos os metadados públicos, como antes. A allowlist só passa a valer depois que você salva a configuração daquela coleção.
 
 == Changelog ==
+
+= 1.5.2 =
+* Cores alinhadas à identidade do site: o cabeçalho do modal e os botões agora usam o degradê oficial teal (petróleo) → verde, em vez do verde genérico. Título e botão de fechar em branco sobre o degradê, com bom contraste.
 
 = 1.5.1 =
 * Visual: novo tema verde claro moderno, com cabeçalho e botões em degradê e fonte do sistema mais legível (com suavização).

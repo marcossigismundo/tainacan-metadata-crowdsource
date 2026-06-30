@@ -6,22 +6,25 @@
 
 .tmc-widget,
 .tmc-modal-root {
-    --tmc-accent: #16a34a;
-    --tmc-accent-hover: #15803d;
-    --tmc-accent-soft: rgba(22, 163, 74, 0.12);
-    --tmc-accent-grad: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-    --tmc-accent-grad-hover: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
-    --tmc-header-grad: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-    --tmc-body-grad: linear-gradient(180deg, #ffffff 0%, #f4fcf7 100%);
-    --tmc-ink: #102a1e;
-    --tmc-ink-soft: #41685a;
-    --tmc-muted: #94b3a4;
-    --tmc-border: #d8ece1;
+    /* Cores da marca do site: degradê teal (petróleo) -> verde. */
+    --tmc-brand-teal: #1b4d59;
+    --tmc-brand-green: #2f8a4e;
+    --tmc-brand-grad: linear-gradient(135deg, #1b4d59 0%, #2f8a4e 100%);
+    --tmc-brand-grad-hover: linear-gradient(135deg, #163f49 0%, #277542 100%);
+
+    --tmc-accent: #2f8a4e;
+    --tmc-accent-hover: #25703f;
+    --tmc-accent-soft: rgba(47, 138, 78, 0.14);
+    --tmc-body-grad: linear-gradient(180deg, #ffffff 0%, #f3faf6 100%);
+    --tmc-ink: #102a23;
+    --tmc-ink-soft: #45675c;
+    --tmc-muted: #92b1a5;
+    --tmc-border: #d7e8e0;
     --tmc-surface: #ffffff;
     --tmc-surface-2: #f3faf6;
     --tmc-radius: 16px;
     --tmc-radius-sm: 10px;
-    --tmc-shadow: 0 10px 30px rgba(6, 46, 33, 0.08);
+    --tmc-shadow: 0 10px 30px rgba(16, 42, 35, 0.08);
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -240,20 +243,20 @@
 
 .tmc-submit {
     padding: 0.7em 1.6em;
-    background: var(--tmc-accent-grad);
+    background: var(--tmc-brand-grad);
     color: #fff;
     border: none;
     border-radius: 999px;
     font-size: 1em;
     font-weight: 600;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.28);
+    box-shadow: 0 4px 12px rgba(27, 77, 89, 0.26);
     transition: background 0.15s, transform 0.05s, box-shadow 0.15s;
 }
 
 .tmc-submit:hover:not(:disabled) {
-    background: var(--tmc-accent-grad-hover);
-    box-shadow: 0 6px 16px rgba(22, 163, 74, 0.34);
+    background: var(--tmc-brand-grad-hover);
+    box-shadow: 0 6px 16px rgba(27, 77, 89, 0.32);
 }
 
 .tmc-submit:active:not(:disabled) {
@@ -310,7 +313,7 @@
     align-items: center;
     gap: 0.55em;
     padding: 0.75em 1.5em;
-    background: var(--tmc-accent-grad);
+    background: var(--tmc-brand-grad);
     color: #fff;
     border: none;
     border-radius: 999px;
@@ -318,7 +321,7 @@
     font-weight: 600;
     font-family: inherit;
     cursor: pointer;
-    box-shadow: 0 4px 14px rgba(22, 163, 74, 0.3);
+    box-shadow: 0 4px 14px rgba(27, 77, 89, 0.3);
     transition: background 0.15s, transform 0.05s, box-shadow 0.15s;
 }
 
@@ -328,8 +331,8 @@
 }
 
 .tmc-open-modal:hover {
-    background: var(--tmc-accent-grad-hover);
-    box-shadow: 0 6px 18px rgba(22, 163, 74, 0.36);
+    background: var(--tmc-brand-grad-hover);
+    box-shadow: 0 6px 18px rgba(27, 77, 89, 0.36);
 }
 
 .tmc-open-modal:active {
@@ -377,8 +380,7 @@ body.tmc-modal-open {
     justify-content: space-between;
     gap: 1em;
     padding: 1.15em 1.6em;
-    border-bottom: 1px solid var(--tmc-border);
-    background: var(--tmc-header-grad);
+    background: var(--tmc-brand-grad);
 }
 
 .tmc-modal-title {
@@ -386,7 +388,7 @@ body.tmc-modal-open {
     font-size: 1.2em;
     font-weight: 700;
     letter-spacing: -0.015em;
-    color: var(--tmc-accent-hover);
+    color: #fff;
 }
 
 .tmc-modal-close {
@@ -397,17 +399,17 @@ body.tmc-modal-open {
     width: 2em;
     height: 2em;
     border: none;
-    background: rgba(22, 163, 74, 0.12);
+    background: rgba(255, 255, 255, 0.18);
     font-size: 1.5em;
     line-height: 1;
-    color: var(--tmc-accent-hover);
+    color: #fff;
     cursor: pointer;
     border-radius: 50%;
     transition: background 0.15s, color 0.15s, transform 0.05s;
 }
 
 .tmc-modal-close:hover {
-    background: var(--tmc-accent);
+    background: rgba(255, 255, 255, 0.32);
     color: #fff;
 }
 
