@@ -67,15 +67,15 @@ class AdminPage extends \Tainacan\Pages {
 	}
 
 	/**
-	 * Registra o submenu no item raiz do Tainacan e o hook de carga.
+	 * Registra o submenu sob o grupo "Other" (Outros) do Tainacan e o hook de carga.
 	 *
-	 * Posição alta (80) para empurrar para o final do menu lateral, abaixo
-	 * de Repository / Other; do contrário, posições baixas como `3`
-	 * intercalam o item entre os filhos de Repository visualmente.
+	 * Segue o padrão das páginas nativas do Tainacan (Settings, Roles, System
+	 * Check): o item entra no grupo recolhível "Other" (parent
+	 * `tainacan_other_links_slug`), caindo para o menu raiz só quando o gestor
+	 * ocultou o grupo "Other" via opção de UI `hideNavigationOtherMenu`.
 	 *
-	 * Cap `read` segue o padrão das páginas nativas do Tainacan (Roles,
-	 * Settings); validamos `manage_options` dentro da página/REST antes
-	 * de qualquer ação destrutiva.
+	 * Cap `read` segue o padrão dessas páginas nativas; validamos
+	 * `manage_options` dentro da página/REST antes de qualquer ação destrutiva.
 	 *
 	 * @return void
 	 */
@@ -84,16 +84,19 @@ class AdminPage extends \Tainacan\Pages {
 		// helper não retornar nada — ainda assim o texto e o link funcionam.
 		$icon_svg = method_exists( $this, 'get_svg_icon' ) ? $this->get_svg_icon( 'note' ) : '';
 
+		$parent_slug = $this->has_admin_ui_option( 'hideNavigationOtherMenu' )
+			? $this->tainacan_root_menu_slug
+			: $this->tainacan_other_links_slug;
+
 		$this->page_suffix = add_submenu_page(
-			$this->tainacan_root_menu_slug,
-			__( 'Crowdsource', 'tainacan-metadata-crowdsource' ),
+			$parent_slug,
+			__( 'Colab', 'tainacan-metadata-crowdsource' ),
 			'<span class="icon" aria-hidden="true">' . $icon_svg . '</span>'
-				. '<span class="menu-text">' . esc_html__( 'Crowdsource', 'tainacan-metadata-crowdsource' )
+				. '<span class="menu-text">' . esc_html__( 'Colab', 'tainacan-metadata-crowdsource' )
 				. $this->menu_badge() . '</span>',
 			'read',
 			$this->get_page_slug(),
-			array( &$this, 'render_page' ),
-			80
+			array( &$this, 'render_page' )
 		);
 
 		if ( $this->page_suffix ) {
@@ -291,7 +294,7 @@ class AdminPage extends \Tainacan\Pages {
 		<div class="wrap tainacan-page-container-content tmc-wrap">
 			<div class="tainacan-fixed-subheader">
 				<h1 class="tainacan-page-title">
-					<?php esc_html_e( 'Crowdsource de metadados', 'tainacan-metadata-crowdsource' ); ?>
+					<?php esc_html_e( 'Tainacan Colab', 'tainacan-metadata-crowdsource' ); ?>
 				</h1>
 				<p class="tainacan-page-description">
 					<?php esc_html_e( 'Sugestões recebidas do público para revisão pela equipe.', 'tainacan-metadata-crowdsource' ); ?>

@@ -108,7 +108,7 @@ class Plugin {
 	public function render_missing_tainacan_notice() {
 		echo '<div class="notice notice-error"><p>'
 			. esc_html__(
-				'Tainacan Metadata Crowdsource requer o plugin Tainacan ativo para integrar com o menu administrativo.',
+				'Tainacan Colab requer o plugin Tainacan ativo para integrar com o menu administrativo.',
 				'tainacan-metadata-crowdsource'
 			)
 			. '</p></div>';

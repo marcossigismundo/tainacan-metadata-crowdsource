@@ -1,10 +1,10 @@
-=== Tainacan Metadata Crowdsource ===
+=== Tainacan Colab ===
 Contributors: marcossigismundo
 Tags: tainacan, crowdsourcing, metadata, museum, collections
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.5.3
+Stable tag: 1.6.0
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -12,7 +12,7 @@ Permite que visitantes sugiram correções nos metadados dos itens Tainacan. As 
 
 == Description ==
 
-Tainacan Metadata Crowdsource adiciona uma camada de curadoria colaborativa às coleções do Tainacan. Visitantes (mesmo anônimos) podem sugerir correções para qualquer metadado de um item; a equipe revisa e aprova ou rejeita cada sugestão. Ao aprovar, o valor é gravado no item via as APIs oficiais do Tainacan (`Item_Metadata`), respeitando validação e cardinalidade.
+Tainacan Colab adiciona uma camada de curadoria colaborativa às coleções do Tainacan. Visitantes (mesmo anônimos) podem sugerir correções para qualquer metadado de um item; a equipe revisa e aprova ou rejeita cada sugestão. Ao aprovar, o valor é gravado no item via as APIs oficiais do Tainacan (`Item_Metadata`), respeitando validação e cardinalidade.
 
 Principais recursos:
 
@@ -54,6 +54,11 @@ Sim. Por padrão o formulário lê todos os metadados públicos do item. Em **Cr
 Não. Enquanto uma coleção não for configurada na aba "Coleções", ela continua aceitando sugestões em todos os metadados públicos, como antes. A allowlist só passa a valer depois que você salva a configuração daquela coleção.
 
 == Changelog ==
+
+= 1.6.0 =
+* Renomeado para **Tainacan Colab** (nome de exibição). O identificador interno, a pasta e os dados existentes não mudam.
+* O menu do plugin agora aparece dentro do grupo **"Outros" (Other)** do Tainacan, junto de Configurações, Funções de usuário e Diagnóstico — seguindo o padrão das páginas nativas (cai no menu raiz se o grupo "Outros" estiver oculto nas opções de UI do Tainacan).
+* Preparação para a publicação no WordPress.org: cabeçalhos `Requires Plugins: tainacan`, `Domain Path` e `License URI`; revisão completa pelos critérios do Plugin Check (escape de saída, nonces, sanitização, i18n, `$wpdb` só na tabela própria) sem pendências.
 
 = 1.5.3 =
 * Correção visual: o título do modal força a cor branca (`!important`), evitando que o estilo de cabeçalhos (h3) do tema o deixe ilegível sobre o degradê.

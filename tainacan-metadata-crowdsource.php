@@ -1,14 +1,17 @@
 <?php
 /**
- * Plugin Name: Tainacan Metadata Crowdsource
+ * Plugin Name: Tainacan Colab
  * Plugin URI:  https://github.com/marcossigismundo/tainacan-metadata-crowdsource
  * Description: Permite que visitantes sugiram correções nos metadados dos itens Tainacan. Sugestões passam por moderação da equipe antes de serem aplicadas.
- * Version:     1.5.3
+ * Version:     1.6.0
  * Author:      Tainacan Team
- * License:     GPL-3.0+
+ * License:     GPL-3.0-or-later
+ * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain: tainacan-metadata-crowdsource
+ * Domain Path: /languages
  * Requires at least: 6.0
  * Requires PHP: 8.0
+ * Requires Plugins: tainacan
  *
  * @package TMC
  */
@@ -17,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TMC_VERSION', '1.5.3' );
+define( 'TMC_VERSION', '1.6.0' );
 define( 'TMC_PLUGIN_FILE', __FILE__ );
 define( 'TMC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'TMC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

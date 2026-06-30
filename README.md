@@ -1,6 +1,8 @@
-# Tainacan Metadata Crowdsource
+# Tainacan Colab
 
 Plugin WordPress independente que permite aos visitantes sugerir correções nos metadados de itens do [Tainacan](https://tainacan.org). Sugestões são revisadas pela equipe antes de serem aplicadas.
+
+> Identificador interno (slug/pasta/text-domain): `tainacan-metadata-crowdsource`. "Tainacan Colab" é o nome de exibição.
 
 ## Como funciona
 
